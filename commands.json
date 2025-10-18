@@ -1,0 +1,9 @@
+[
+  { "name": "hablar", "description": "Habla con Softti Tales 💬" },
+  { "name": "hug", "description": "Da un abracito suave 🤗" },
+  { "name": "kiss", "description": "Da un besito tierno 💋" },
+  { "name": "pat", "description": "Acaricia a alguien 🐾" },
+  { "name": "pet", "description": "Pide mimitos 🐱" },
+  { "name": "mymoney", "description": "Revisa tus moneditas 💸" },
+  { "name": "uwu", "description": "Haz algo adorable 🌸" }
+]
