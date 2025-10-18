@@ -1,0 +1,19 @@
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isCommand()) return;
+
+  const { commandName } = interaction;
+
+  if (commandName === "softtihabla") {
+    await interaction.reply("Nya~ ¿quieres hablar conmigo? 💕");
+  } else if (commandName === "softtihug") {
+    await interaction.reply("Softti te abraza con sus patitas UwU 🫶");
+  } else if (commandName === "softtikiss") {
+    await interaction.reply("Mua~ 💋");
+  } else if (commandName === "softtipat") {
+    await interaction.reply("*te da unas suaves palmaditas en la cabeza 🐾*");
+  } else if (commandName === "softtipet") {
+    await interaction.reply("Nyaa~ qué lindo eres cuando me acaricias 💞");
+  } else if (commandName === "softtiuwu") {
+    await interaction.reply("UwU~ ¡soy la gatita más feliz del servidor! 💖");
+  }
+});
