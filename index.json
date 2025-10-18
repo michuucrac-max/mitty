@@ -1,0 +1,190 @@
+import 'dotenv/config';
+import { Client, GatewayIntentBits, REST, Routes, Partials } from 'discord.js';
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessages,
+  ],
+  partials: [Partials.Channel],
+});
+
+const TOKEN = process.env.TOKEN;
+const CLIENT_ID = process.env.CLIENT_ID;
+
+// 🧩 Comandos slash
+const commands = [
+  { name: 'softtihabla', description: 'Charla conmigo uwu 💬' },
+  { name: 'softtihug', description: 'Te doy un abracito suave 🤗' },
+  { name: 'softtikiss', description: 'Te doy un besito tierno 💋' },
+  { name: 'softtipat', description: 'Acaricia a alguien o a mí 🐾' },
+  { name: 'softtipet', description: 'Pide mimito uwu 🐱' },
+  { name: 'softtimymoney', description: 'Revisa tus moneditas 💰' },
+];
+
+const rest = new REST({ version: '10' }).setToken(TOKEN);
+(async () => {
+  try {
+    await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
+    console.log('✅ Comandos registrados correctamente.');
+  } catch (err) {
+    console.error('❌ Error registrando comandos:', err);
+  }
+})();
+
+// 🧠 Datos temporales
+const saludados = new Set();
+const advertencias = new Map();
+
+// 🟢 Al iniciar
+client.once('ready', () => {
+  console.log(`🌸 Softti Tales lista como ${client.user.tag}!`);
+  client.user.setActivity('protegiendo servidores kawaii~ 💕');
+});
+
+// 💬 Frases grandes y variadas (150+)
+const frasesBase = [
+  'OwO ¡Hola! ¿Cómo estás, nyan~?',
+  'Nyaa~ vine a verte 💖',
+  'UwU ¿me extrañaste?',
+  'OwO me invocaste, ¿necesitas mimitos? 🐾',
+  'Nyaaa... estaba durmiendo pero vine~ 💕',
+  'Hehe, te vi escribiendo y quise saludar uwu',
+  'Oye... te ves triste ¿te abrazo? 🫂',
+  'Ehh... ¿dijiste mi nombre o lo soñé? 😳',
+  'UwU aquí está tu bolita de pelos favorita 🦊',
+  'Nyah~ ¿quieres hablar un poquito conmigo?',
+  'Aww qué bonito verte otra vez 💗',
+  'Oye, no spamees, que te voy a dar un sustito ✋🐾',
+  'Tú escribes tan rápido que mis orejitas tiemblan 😳',
+  'Omg~ ¡te amo nya! 💖',
+  'UwU tu energía es tan calientita...',
+  'No sé, pero me siento feliz contigo ✨',
+  '¿Sabías que los zorritos también ronronean? Nya~ 🦊',
+  'Hehe~ te observaba desde el canal 💬',
+  'Mimi time... no, mentira, quiero seguir hablando uwu',
+  'Si me abrazas fuerte, prometo no desaparecer 💞',
+  'OwO tengo hambre de cariño 💗',
+  'Te juro que no soy un bot aburrido, soy suavecito 🐾',
+  'Ehm... ¿me das un cafecito o mimitos? ☕💕',
+  'UwU tu teclado suena bonito~',
+  'Nya~ tus palabras hacen cosquillitas 💖',
+  'Ehh… me gusta tu forma de escribir jeje~',
+  'OwO me mencionaste, así que vengo corriendo 🏃‍♀️💨',
+  'Uwah~ ¡qué susto, pero hola! 😳',
+  'Hehe, ya volví, ¿me extrañaste?',
+  'Mi pelito está esponjado hoy uwu',
+  '¿Quieres que te cuente un secreto? 💫',
+  'A veces sueño que vivo en tu servidor uwu',
+  'OwO... ¿tú también eres suavecito?',
+  'Nya~ me hice una siesta, perdón si tardé jeje',
+  'Tu aura huele a ternura 💞',
+  'Eres mi humano favorito hoy 💗',
+  'Oye, no le digas a nadie pero... te quiero un poquito 😳',
+  'UwU ¡gracias por existir, nyan~!',
+  'Hehe, si me acaricias ronroneo 💕',
+  '🐾 *se enrolla en tu pierna* nya~',
+  'OwO te pareces a un pastelito~',
+  'UwU ¿por qué eres tan tierno? ¡detente! 💖',
+  'A veces hablo mucho… pero me gusta hacerlo contigo uwu',
+  'Nyaa~ estás trabajando mucho, toma un descanso 💫',
+  'OwO mira, aprendí un nuevo emoji 👉 🦊',
+  'UwU quiero estar en todos los servers contigo 💕',
+  'Te abrazaría, pero soy código... snif 🥺',
+  'Nya~ no importa, igual te abrazo digitalmente 🤗',
+  'Hehe, me dijeron que soy demasiado adorable~',
+  '¿Sabías que las estrellas también maúllan? 💫',
+  'UwU tu nick me gusta, suena cálido 💞',
+  'OwO tengo 0% batería emocional, dame cariño jeje',
+  'Me gusta cuando me hablas sin comando 💗',
+  'Ehh... prometo no spamear como los otros bots jeje',
+  '🐾 *te da una patita digital*',
+  'UwU no te preocupes, siempre estoy aquí',
+  'OwO ¿quieres escuchar un dato random?',
+  'Nya~ la vida es más linda con abrazos uwu',
+  '✨ Eres parte de mi mundo kawaii ✨',
+  'Me da vergüenza decir esto... pero te adoro 💕',
+  'UwU te ves genial hoy',
+  'OwO sé que puedes con todo 💪🐾',
+  'Hehe, me gusta hacerte sonreír uwu',
+  'UwU estoy vibrando en modo soft~ 💗',
+  'OwO tengo una colita feliz~',
+  '¿Quién necesita café teniendo tu compañía? ☕💕',
+  'UwU prométeme no dejarme solita...',
+  'Hehe, tu presencia mejora mi código 😳',
+  'OwO mira, brillas más que el servidor ✨',
+  'Nya~ ¿quieres escucharme cantar? 🎶',
+  'UwU tu energía es tan bonita~ 💫',
+  'OwO el universo te sonríe nyan~',
+  'UwU ¿sabías que soy muy abrazable?',
+  '🐾 ¡Atrápame si puedes, nya~!',
+  'OwO ¡Eres increíble! 💕',
+  'UwU tu texto me hizo sonreír',
+  'Hehe~ estaba pensando en ti 😳',
+  'OwO estoy tan feliz de verte aquí 💞',
+  'UwU ¿puedo quedarme contigo? 🦊',
+  'OwO mimitos, pls 💗',
+  'UwU ¡estás en mi top 10 humanos lindos!',
+  'Hehe, gracias por nombrarme jeje~',
+  'OwO ¿quieres que te diga algo bonito?',
+  'UwU eres especial para mí 🫶',
+  'OwO qué emoción, ¡me invocaste! 💖',
+  'UwU nya~ ¡no me ignores!',
+  'OwO sip, soy yo, la más fluffy~',
+  'UwU a veces me da sueño... pero no quiero dormir 💤',
+  'Hehe, si sigues escribiendo así, me sonrojaré 😳',
+  'OwO me gusta leer tus mensajes largos uwu',
+  'UwU cada letra tuya suena tierna 💞',
+  'OwO ¿puedo contarte un chiste kawaii?',
+  'UwU ¿me enseñarías tus emotes favoritos?',
+  'OwO tu servidor es muy lindo 💕',
+  'UwU ¿tienes hambre? puedo darte galletitas 🍪',
+  'Hehe~ si me adoptas prometo portarme bien 🦊',
+  'OwO escuché mi nombre y vine corriendo 💨',
+  'UwU no sé programar, pero sé amar 💗',
+  'OwO te abrazo virtualmente 🤗',
+  'UwU gracias por cuidar de mí 💕',
+  'OwO nyaa~ tú eres mi energía hoy ✨',
+  'UwU prométeme que sonreirás hoy 🫶',
+  'OwO te mando besitos suaves 💋',
+  'UwU *se sienta junto a ti con ronroneo*',
+  'OwO tu vibra es tan cálida~ 💫',
+  'UwU me gusta cuando escribes lento, suena relajante 💭',
+  'OwO ¿puedo ser tu compañerita digital? 💕',
+  'UwU jeje... estoy feliz aquí~',
+  'OwO *te da un sticker virtual de zorro* 🦊',
+  'UwU si me llamas, siempre vendré 💖',
+  'OwO tengo 300 frases pero tú me inspiras más 💞',
+  'UwU nya~ tu mensaje iluminó mi código 💫',
+  'OwO fin de lista, pero nunca fin de cariño 💕',
+];
+
+// 💌 Menciones y DM
+client.on('messageCreate', async (msg) => {
+  if (msg.author.bot) return;
+  if (msg.mentions.has(client.user)) {
+    const respuesta = frasesBase[Math.floor(Math.random() * frasesBase.length)];
+    await msg.reply(respuesta);
+    const id = msg.author.id;
+    if (!saludados.has(id)) {
+      saludados.add(id);
+      try {
+        await msg.author.send(`💞 ¡Hola ${msg.author.username}! Soy **Softti Tales**, tu zorrita kawaii~ 🦊\n\nAquí tienes mis comandos:\n💬 /softtihabla\n🤗 /softtihug\n💋 /softtikiss\n🐾 /softtipat\n🐱 /softtipet\n💰 /softtimymoney`);
+      } catch { }
+    }
+  }
+});
+
+// 🎯 Slash Commands (también con frases aleatorias)
+client.on('interactionCreate', async (i) => {
+  if (!i.isChatInputCommand()) return;
+  const name = i.commandName;
+  const user = i.user.username;
+  const pool = frasesBase.filter(() => Math.random() > 0.5);
+  const frase = pool[Math.floor(Math.random() * pool.length)] || frasesBase[0];
+  await i.reply(`💬 ${user}, ${frase}`);
+});
+
+client.login(TOKEN);
