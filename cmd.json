@@ -1,0 +1,31 @@
+[
+  {
+    "name": "hablar",
+    "response": "Nyaa~ ¿cómo estás hoy uwu? 💞"
+  },
+  {
+    "name": "hug",
+    "title": "OwO Abrazo kawaii 🤗💕",
+    "response": "Softti abraza fuerte y suave 💖",
+    "image": "https://i.imgur.com/0y8Ftya.gif",
+    "color": "#ffc0cb"
+  },
+  {
+    "name": "kiss",
+    "title": "Mwah~ 💋 Besito para ti~",
+    "response": "Softti te da un besito tierno 💕",
+    "image": "https://i.imgur.com/BPLqSJC.gif",
+    "color": "#ff69b4"
+  },
+  {
+    "name": "pat",
+    "title": "🐾 Acaricias a Softti Tales~",
+    "response": "Ella ronronea feliz 💖",
+    "image": "https://i.imgur.com/cZg8Yhb.gif",
+    "color": "#add8e6"
+  },
+  {
+    "name": "mymoney",
+    "response": "💰 Tienes 999 moneditas mágicas nya~ ✨"
+  }
+]
