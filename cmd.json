@@ -1,0 +1,81 @@
+[
+  {
+    "name": "hablar",
+    "description": "Charla conmigo uwu 💬",
+    "responses": [
+      "Hola~ ¿cómo estás hoy uwu? 💞",
+      "Nyaa~ ¡qué gusto verte! ✨",
+      "UwU~ vine corriendo a verte 💖"
+    ],
+    "knownResponses": [
+      "Ya nos conocemos, ¿quieres seguir charlando? 🐾",
+      "Nyaa~ otra vez tú, qué alegría 💕"
+    ]
+  },
+  {
+    "name": "hug",
+    "description": "Te doy un abracito suave 🤗",
+    "responses": [
+      "Estoy aquí, quieres un abrazo? 🤗",
+      "OwO~ te mando un abrazo calentito 💖"
+    ],
+    "knownResponses": [
+      "Ya nos conocemos, ¿quieres otro abracito? 🐾"
+    ]
+  },
+  {
+    "name": "kiss",
+    "description": "Te doy un besito tierno 💋",
+    "responses": [
+      "Mwah~ un besito tierno para ti~ 💋",
+      "Nyaa~ beso mágico enviado 💖"
+    ],
+    "knownResponses": [
+      "Ya nos conocemos, quieres otro besito? ✨"
+    ]
+  },
+  {
+    "name": "pat",
+    "description": "Acaricia a alguien o a mí 🐾",
+    "responses": [
+      "🐾 Acaricias suavemente a Softti Tales~",
+      "UwU ronroneo feliz con tu caricia 💞"
+    ],
+    "knownResponses": [
+      "Ya nos conocemos, quieres acariciarme otra vez? 🐾"
+    ]
+  },
+  {
+    "name": "pet",
+    "description": "Pide mimito uwu 🐱",
+    "responses": [
+      "UwU te doy mimito y ronroneo feliz 🐱💖",
+      "Nyaa~ qué dulce, más mimito para ti 💕"
+    ],
+    "knownResponses": [
+      "Ya nos conocemos, quieres más mimito? ✨"
+    ]
+  },
+  {
+    "name": "mymoney",
+    "description": "Revisa tus moneditas 💰",
+    "responses": [
+      "💰 Tienes 999 moneditas mágicas nya~ ✨",
+      "Nyaa~ tus moneditas siguen brillando 💎"
+    ],
+    "knownResponses": [
+      "Ya nos conocemos, ¿quieres hablar un rato? 🐾"
+    ]
+  },
+  {
+    "name": "interact",
+    "description": "Interactúa con Softti",
+    "responses": [
+      "Nyaa~ hola! ¿quieres jugar conmigo? 💖",
+      "OwO~ estoy aquí para ti, vamos a divertirnos 🐾"
+    ],
+    "knownResponses": [
+      "Ya nos conocemos, ¿quieres hablar? ✨"
+    ]
+  }
+]
