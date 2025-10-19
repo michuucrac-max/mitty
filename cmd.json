@@ -1,0 +1,17 @@
+[
+  {
+    "name": "softihug",
+    "description": "Da un abrazo kawaii",
+    "response": "OwO ¡Te doy un abrazito suave, nwn! 💖"
+  },
+  {
+    "name": "softikiss",
+    "description": "Da un besito tierno",
+    "response": "Mwah~ 💋 Solo para ti, nyan~"
+  },
+  {
+    "name": "softihablar",
+    "description": "Responde con IA estilo kawaii",
+    "response": "AI" 
+  }
+]
