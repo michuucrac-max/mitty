@@ -1,0 +1,17 @@
+{
+  "name": "softti-bot",
+  "version": "1.0.0",
+  "description": "Bot Discord furry/kwai/uwu con OpenAI",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "express": "^4.21.1",
+    "fs": "^0.0.1-security",
+    "node-fetch": "^3.3.2",
+    "openai": "^4.61.0"
+  }
+}
