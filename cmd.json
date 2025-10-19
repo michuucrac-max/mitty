@@ -1,0 +1,266 @@
+[
+  {
+    "name": "magicalunicorn",
+    "description": "Un unicornio mágico que brilla en la noche",
+    "response": "Nyaa~ ¡Mira este unicornio mágico y kawaii! 🦄✨",
+    "image": "https://i.imgur.com/abc1234.png"
+  },
+  {
+    "name": "shinyphoenix",
+    "description": "Fénix resplandeciente que renace de las llamas",
+    "response": "Rawr~ ¡Un fénix resplandeciente ha aparecido! 🔥🕊️",
+    "image": "https://i.imgur.com/def5678.png"
+  },
+  {
+    "name": "playfulkitten",
+    "description": "Gatito travieso jugando con hilo",
+    "response": "UwU ¡Un gatito juguetón quiere jugar contigo! 🐱💖",
+    "image": "https://i.imgur.com/ghi9012.jpg"
+  },
+  {
+    "name": "fluffyhamster",
+    "description": "Hámster esponjoso corriendo en su rueda",
+    "response": "Awoo~ ¡Mira a este hámster tan adorable! 🐹✨",
+    "image": "https://i.imgur.com/jkl3456.jpg"
+  },
+  {
+    "name": "sparklepenguin",
+    "description": "Pingüino brillante y feliz",
+    "response": "UwU ¡Un pingüino brillante y kawaii te saluda! 🐧💖",
+    "image": "https://i.imgur.com/mno7890.png"
+  },
+  {
+    "name": "cutebear",
+    "description": "Osito abrazable de peluche",
+    "response": "Nyaa~ un osito adorable para abrazar 🐻💞",
+    "image": "https://i.imgur.com/pqr2345.jpg"
+  },
+  {
+    "name": "glitterfox",
+    "description": "Zorro brillante y juguetón",
+    "response": "Rawr~ ¡Mira a este zorro brillante! 🦊✨",
+    "image": "https://i.imgur.com/stu6789.png"
+  },
+  {
+    "name": "fairypup",
+    "description": "Perrito con alas de hada",
+    "response": "Awoo~ un perrito mágico con alas de hada 🐶🧚",
+    "image": "https://i.imgur.com/vwx0123.jpg"
+  },
+  {
+    "name": "cosmiccat",
+    "description": "Gato flotando en el espacio",
+    "response": "UwU ¡Un gatito cósmico explorando las estrellas! 🌌🐱",
+    "image": "https://i.imgur.com/yza4567.png"
+  },
+  {
+    "name": "rainbowbunny",
+    "description": "Conejito con pelaje arcoíris",
+    "response": "Nyaa~ un conejito arcoíris lleno de alegría 🌈🐰",
+    "image": "https://i.imgur.com/bcd8901.jpg"
+  },
+  {
+    "name": "twinklingfairy",
+    "description": "Hada que brilla con luces mágicas",
+    "response": "✨ Nyaa~ una hada brillante y kawaii te acompaña 💖",
+    "image": "https://i.imgur.com/efg2345.gif"
+  },
+  {
+    "name": "starrykitten",
+    "description": "Gatito durmiendo bajo un cielo estrellado",
+    "response": "UwU Nyaa~ un gatito soñando bajo las estrellas 🌟🐱",
+    "image": "https://i.imgur.com/hij6789.jpg"
+  },
+  {
+    "name": "moonbunny",
+    "description": "Conejito bajo la luz de la luna",
+    "response": "🌙 Nyaa~ un conejito bajo la luna brillante 🐰✨",
+    "image": "https://i.imgur.com/klm0123.jpg"
+  },
+  {
+    "name": "cloudkitten",
+    "description": "Gato flotando entre nubes",
+    "response": "☁️ UwU un gatito entre nubes kawaii 🐱💖",
+    "image": "https://i.imgur.com/nop4567.jpg"
+  },
+  {
+    "name": "sparklepenguin2",
+    "description": "Pingüino con destellos mágicos",
+    "response": "Nyaa~ un pingüino brillante y feliz 🐧✨",
+    "image": "https://i.imgur.com/qrs8901.png"
+  },
+  {
+    "name": "flowerfox",
+    "description": "Zorro rodeado de flores mágicas",
+    "response": "🌸 UwU un zorro adorable entre flores 🌺🦊",
+    "image": "https://i.imgur.com/tuv2345.jpg"
+  },
+  {
+    "name": "dreamypanda",
+    "description": "Panda durmiendo plácidamente",
+    "response": "Zzz~ un panda soñador y kawaii 🐼💤",
+    "image": "https://i.imgur.com/wxy6789.jpg"
+  },
+  {
+    "name": "sparklyunicorn",
+    "description": "Unicornio con pelaje brillante",
+    "response": "Nyaa~ un unicornio brillante y mágico 🦄✨",
+    "image": "https://i.imgur.com/yzb0123.png"
+  },
+  {
+    "name": "glitterbunny",
+    "description": "Conejito con destellos mágicos",
+    "response": "UwU un conejito brillante lleno de alegría 🐰✨",
+    "image": "https://i.imgur.com/cde4567.png"
+  },
+  {
+    "name": "cutekitten",
+    "description": "Gatito adorable jugando",
+    "response": "Nyaa~ un gatito kawaii quiere jugar contigo 🐱💖",
+    "image": "https://i.imgur.com/fgh8901.jpg"
+  },
+  {
+    "name": "magicfox",
+    "description": "Zorro mágico con colita brillante",
+    "response": "Rawr~ un zorro mágico te saluda 🦊✨",
+    "image": "https://i.imgur.com/ijk2345.png"
+  },
+  {
+    "name": "fluffybear",
+    "description": "Osito de peluche suave y abrazable",
+    "response": "Nyaa~ un osito kawaii para abrazar 🐻💖",
+    "image": "https://i.imgur.com/lmn6789.jpg"
+  },
+  {
+    "name": "sparklepup",
+    "description": "Perrito brillante y feliz",
+    "response": "Awoo~ un perrito mágico lleno de alegría 🐶✨",
+    "image": "https://i.imgur.com/opq0123.jpg"
+  },
+  {
+    "name": "moonkitty",
+    "description": "Gatito bajo la luz de la luna",
+    "response": "🌙 UwU un gatito brillante bajo la luna 🐱✨",
+    "image": "https://i.imgur.com/rst4567.jpg"
+  },
+  {
+    "name": "rainbowfox",
+    "description": "Zorro con pelaje arcoíris",
+    "response": "Nyaa~ un zorro lleno de colores 🌈🦊",
+    "image": "https://i.imgur.com/uvw8901.png"
+  },
+  {
+    "name": "glittercat",
+    "description": "Gatito con destellos brillantes",
+    "response": "UwU un gatito mágico que brilla 🐱✨",
+    "image": "https://i.imgur.com/xyz2345.png"
+  },
+  {
+    "name": "starrybunny",
+    "description": "Conejito bajo un cielo estrellado",
+    "response": "🌟 Nyaa~ un conejito soñador 🌙🐰",
+    "image": "https://i.imgur.com/abc6789.jpg"
+  },
+  {
+    "name": "sparklypanda",
+    "description": "Panda con brillo mágico",
+    "response": "UwU un panda kawaii lleno de magia 🐼✨",
+    "image": "https://i.imgur.com/def0123.jpg"
+  },
+  {
+    "name": "dreamyfox",
+    "description": "Zorro dormilón y adorable",
+    "response": "Zzz~ Nyaa~ un zorro soñador 🦊💖",
+    "image": "https://i.imgur.com/ghi4567.jpg"
+  },
+  {
+    "name": "moonpenguin",
+    "description": "Pingüino bajo la luz de la luna",
+    "response": "🌙 UwU un pingüino mágico 🐧✨",
+    "image": "https://i.imgur.com/jkl8901.png"
+  },
+  {
+    "name": "fluffybunny",
+    "description": "Conejito esponjoso y feliz",
+    "response": "Awoo~ un conejito adorable 🐰💖",
+    "image": "https://i.imgur.com/mno2345.jpg"
+  },
+  {
+    "name": "cutefairy",
+    "description": "Hada pequeña y brillante",
+    "response": "✨ Nyaa~ una hada kawaii 💖🧚",
+    "image": "https://i.imgur.com/pqr6789.png"
+  },
+  {
+    "name": "sparklykitten",
+    "description": "Gatito con destellos mágicos",
+    "response": "UwU un gatito brillante te saluda 🐱✨",
+    "image": "https://i.imgur.com/stu0123.jpg"
+  },
+  {
+    "name": "glimmerfox",
+    "description": "Zorro con colita brillante",
+    "response": "Rawr~ un zorro mágico y kawaii 🦊✨",
+    "image": "https://i.imgur.com/vwx4567.png"
+  },
+  {
+    "name": "dreamykoala",
+    "description": "Koala soñador bajo las estrellas",
+    "response": "Zzz~ UwU un koala adorable 🐨✨",
+    "image": "https://i.imgur.com/yza8901.jpg"
+  },
+  {
+    "name": "rainbowkitten",
+    "description": "Gatito con pelaje arcoíris",
+    "response": "Nyaa~ un gatito lleno de colores 🌈🐱",
+    "image": "https://i.imgur.com/bcd2345.jpg"
+  },
+  {
+    "name": "sparklybunny",
+    "description": "Conejito con brillo mágico",
+    "response": "UwU un conejito brillante y kawaii 🐰✨",
+    "image": "https://i.imgur.com/efg6789.png"
+  },
+  {
+    "name": "magicpenguin",
+    "description": "Pingüino mágico en la nieve",
+    "response": "Awoo~ un pingüino mágico 🐧❄️",
+    "image": "https://i.imgur.com/hij0123.jpg"
+  },
+  {
+    "name": "moonfairy",
+    "description": "Hada bajo la luz de la luna",
+    "response": "🌙 UwU un hada mágica ✨🧚",
+    "image": "https://i.imgur.com/klm4567.png"
+  },
+  {
+    "name": "twinklekitten",
+    "description": "Gatito brillante bajo las estrellas",
+    "response": "Nyaa~ un gatito que brilla en la noche 🌟🐱",
+    "image": "https://i.imgur.com/nop8901.jpg"
+  },
+  {
+    "name": "glitterbunny2",
+    "description": "Conejito con destellos mágicos",
+    "response": "UwU un conejito brillante 🐰✨",
+    "image": "https://i.imgur.com/qrs2345.png"
+  },
+  {
+    "name": "cutekitty",
+    "description": "Gatito adorable jugando con pelotas",
+    "response": "Nyaa~ un gatito kawaii quiere jugar 🐱💖",
+    "image": "https://i.imgur.com/tuv6789.jpg"
+  },
+  {
+    "name": "magicbear",
+    "description": "Osito mágico con brillo suave",
+    "response": "Awoo~ un osito mágico y adorable 🐻✨",
+    "image": "https://i.imgur.com/wxy0123.png"
+  },
+  {
+    "name": "sparklyunicorn2",
+    "description": "Unicornio brillante y mágico",
+    "response": "Nyaa~ un unicornio mágico y kawaii 🦄✨",
+    "image": "https://i.imgur.com/yzb4567.png"
+  }
+]
