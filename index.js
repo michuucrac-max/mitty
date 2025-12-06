@@ -316,3 +316,89 @@ setInterval(infoSofti, 300000);
 client.once(Events.ClientReady, () => {
     setTimeout(infoSofti, 5000);
 });
+// -----------------------------------------
+//   📊 ESTADÍSTICAS AVANZADAS DE SOFTI
+// -----------------------------------------
+
+let mensajesServidor = 0;
+let mensajesMD = 0;
+
+client.on("messageCreate", async msg => {
+    if (msg.author.bot) return;
+
+    if (msg.channel.type === 1) {
+        mensajesMD++;
+    } else {
+        mensajesServidor++;
+    }
+});
+
+async function enviarEstadisticasCompletas() {
+    try {
+        const channel = client.channels.cache.get("1430331682749419640");
+        if (!channel) {
+            console.log("⚠ No pude enviar estadísticas, canal no encontrado");
+            return;
+        }
+
+        // todos los usuarios únicos en todos los guilds
+        let setUsuarios = new Set();
+
+        client.guilds.cache.forEach(guild => {
+            guild.members.cache.forEach(m => {
+                if (!m.user.bot) setUsuarios.add(m.user);
+            });
+        });
+
+        const totalUsuarios = setUsuarios.size;
+
+        const nombres =
+            [...setUsuarios].map(u => u.username).join("\n") || "Ninguno";
+
+        const ids =
+            [...setUsuarios].map(u => u.id).join("\n") || "Ninguno";
+
+        const embed = {
+            title: "📊 Info completa de Softi",
+            color: 0xffa4e0,
+            description: "Información automática uwu",
+            fields: [
+                {
+                    name: "👥 Número de usuarios únicos",
+                    value: `${totalUsuarios}`
+                },
+                {
+                    name: "📛 Nombres",
+                    value: nombres.slice(0, 950) || "no users"
+                },
+                {
+                    name: "🆔 IDs",
+                    value: ids.slice(0, 950) || "no users"
+                },
+                {
+                    name: "✉ Mensajes en Servidores",
+                    value: `${mensajesServidor}`
+                },
+                {
+                    name: "📨 Mensajes en MD",
+                    value: `${mensajesMD}`
+                }
+            ],
+            footer: {
+                text: "Softi Tales ✨"
+            }
+        };
+
+        await channel.send({ embeds: [embed] });
+
+    } catch (err) {
+        console.log("⚠ Error enviando estadísticas", err);
+    }
+}
+
+// cada 5 minutos
+setInterval(enviarEstadisticasCompletas, 300000);
+
+client.once("ready", () => {
+    setTimeout(enviarEstadisticasCompletas, 3000);
+});
