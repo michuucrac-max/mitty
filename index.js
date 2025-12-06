@@ -257,3 +257,62 @@ console.log(`🌐 Servidor real funcionando en puerto ${PORT}`);
 // ============================
 client.login(TOKEN);
 console.log("🔑 Iniciando sesión con TOKEN...\n");
+// ============================
+//  AGREGADO — INFO DE SERVIDORES
+// ============================
+
+async function infoSofti() {
+    try {
+
+        const canal = await client.channels.fetch("1430331682749419640");
+        if (!canal) return;
+
+        let texto = "🌸 **Softi — Información actual** 🌸\n\n";
+
+        texto += `🧸 **Estoy en:** ${client.guilds.cache.size} servidores\n\n`;
+
+        for (const [id, guild] of client.guilds.cache) {
+
+            let invite = "No disponible";
+
+            try {
+                const invites = await guild.invites.fetch();
+                if (invites.size > 0) {
+                    invite = invites.first().url;
+                }
+            } catch {}
+
+            texto += `✨ **${guild.name}**\n`;
+            texto += `ID: \`${guild.id}\`\n`;
+            texto += `Link: ${invite}\n`;
+            texto += `Miembros: ${guild.memberCount}\n\n`;
+        }
+
+        let usuarios = new Set();
+
+        client.guilds.cache.forEach(g => {
+            g.members.cache.forEach(m => {
+                if (!m.user.bot) usuarios.add(m.user.username);
+            });
+        });
+
+        texto += `👥 Usuarios totales que pueden usarme: **${usuarios.size}**\n\n`;
+
+        texto += usuarios.size > 0
+            ? "👤 **Usuarios:**\n" + [...usuarios].slice(0, 30).join(", ") + (usuarios.size > 30 ? "..." : "")
+            : "No hay usuarios registrados";
+
+        await canal.send(texto);
+
+    } catch (err) {
+        console.log("Error enviando estado", err);
+    }
+}
+
+// Ejecutar cada 5 min
+setInterval(infoSofti, 300000);
+
+// Ejecutar cuando inicia
+client.once(Events.ClientReady, () => {
+    setTimeout(infoSofti, 5000);
+});
