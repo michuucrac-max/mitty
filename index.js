@@ -124,9 +124,10 @@ No menciones errores técnicos ni del sistema.
     }
 }
 
-// -------------------------------------------------------------------
-// AQUÍ VA EL CAMBIO IMPORTANTE (y elimina tu bloque “MI PAPA ES...”)
-// -------------------------------------------------------------------
+
+// ===============================
+// EVENTO — AQUÍ ESTÁ TU CAMBIO 💗
+// ===============================
 
 client.on("messageCreate", async (msg) => {
     if (msg.author.bot) return;
@@ -147,6 +148,7 @@ client.on("messageCreate", async (msg) => {
 
     let finalResp = aiResponse;
 
+    // 💞 Aquí añade el toque de amor propio
     if (msg.author.id === "1427297946151551148") {
         finalResp += "\n\nAww papi 💗 siempre es un gusto hablar contigo~";
     }
@@ -155,3 +157,14 @@ client.on("messageCreate", async (msg) => {
         await msg.reply(finalResp);  
     } catch {}
 });
+
+
+// ============================
+// Login
+// ============================
+client.once("ready", () => {
+    console.log(`✨ Softi lista como ${client.user.tag}!`);
+    registerSlashCommands();
+});
+
+client.login(TOKEN);
