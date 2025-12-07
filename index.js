@@ -1,25 +1,27 @@
-// -------------------------
-//  SOFTI TALES — INDEX.JS (CORREGIDO FIX)
-// -------------------------
+// -----------------------------------------------------
+//  SOFTI TALES — INDEX.JS
+// -----------------------------------------------------
 
 import { Client, GatewayIntentBits, Partials, Collection, REST, Routes, Events } from "discord.js";
 import fs from "fs";
 import fetch from "node-fetch";
 
 // ============================
-// MEMORY (recuerdos por usuario)
+// MEMORY (Memoria por usuario)
 // ============================
 const memory = new Map(); // key: userId, value: [{role, content}, ...]
 
 // ============================
-// VARIABLES DESDE ENVIRONMENTS (Render)
+// ENV
 // ============================
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const OWNER_ID = process.env.OWNER_ID;
 const LONGCAT_API = process.env.LONGCAT_API;
 
+// ============================
 // LOGS
+// ============================
 console.log("=======================================");
 console.log("   SOFTI TALES — LOGS ACTIVADOS ✔");
 console.log("=======================================");
@@ -30,7 +32,7 @@ console.log("LONGCAT_API:", LONGCAT_API ? "✔ Cargada" : "❌ Faltante");
 console.log("=======================================\n");
 
 // ============================
-// Cliente
+// CLIENTE
 // ============================
 const client = new Client({
   intents: [
@@ -45,7 +47,7 @@ const client = new Client({
 client.commands = new Collection();
 
 // ============================
-// Cargar comandos desde cmd.json (archivo directo)
+// CARGAR COMANDOS
 // ============================
 console.log("📦 Cargando comandos desde cmd.json...");
 const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
@@ -67,15 +69,13 @@ for (const cmd of rawCmds) {
   slashCommands.push(slash);
   client.commands.set(cmd.name, cmd);
 }
-
 console.log(`✔ Comandos cargados: ${rawCmds.length}`);
 
 // ============================
-// Registrar comandos (GLOBAL)
+// REGISTRO SLASH
 // ============================
 async function registerSlashCommands() {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
-
   try {
     console.log("🚀 Registrando slash commands globales...");
     await rest.put(
@@ -89,7 +89,7 @@ async function registerSlashCommands() {
 }
 
 // ============================
-// IA LongCat (con memoria por usuario)
+// IA LONGCAT
 // ============================
 async function longcatAI(message, userId) {
   try {
@@ -99,9 +99,7 @@ async function longcatAI(message, userId) {
     const systemPrompt = `
 Eres Softi, una IA kawaii, furry, femenina, dulce y adorable.
 Respondes con ternura, estilo suave, ligero modo uwu, pero SIN hablar como bebé.
-No uses lenguaje infantil extremo.
 No menciones errores técnicos ni del sistema.
-Si tienes historial (memoria) de este usuario, úsalo para dar contexto y mejores respuestas.
 `;
 
     const body = {
@@ -124,8 +122,7 @@ Si tienes historial (memoria) de este usuario, úsalo para dar contexto y mejore
     });
 
     const data = await res.json();
-
-    const assistantMsg = data?.choices?.[0]?.message?.content ?? "Softi no entendió, pero te manda un abracito uwu 💞";
+    const assistantMsg = data?.choices?.[0]?.message?.content ?? "Softi no entendió uwu 💞";
 
     history.push({ role: "assistant", content: assistantMsg });
     memory.set(userId, history.slice(-10));
@@ -133,41 +130,32 @@ Si tienes historial (memoria) de este usuario, úsalo para dar contexto y mejore
     return assistantMsg;
   } catch (err) {
     console.error("Error LongCat:", err?.message ?? err);
-    return "Ay… algo salió mal, vuelve a intentarlo uwu 💗";
+    return "Ay… algo salió mal uwu 💗";
   }
 }
 
 // ============================
-// ROTACIÓN DE ESTADOS
+// ROTACIÓN ESTADOS
 // ============================
 let estados = [];
-
 try {
   estados = JSON.parse(fs.readFileSync("estados.json", "utf8"));
 } catch {
-  console.log("⚠ No se encontró estados.json, usando estado por defecto.");
   estados = ["💞 Softi está contigo uwu"];
 }
-
 if (!Array.isArray(estados) || estados.length === 0) {
   estados = ["💞 Softi siempre contigo"];
 }
 
 function cambiarEstadoAuto() {
   const texto = estados[Math.floor(Math.random() * estados.length)];
-
   try {
     client.user.setPresence({
       activities: [{ name: texto, type: 3 }],
       status: "online"
     });
-    console.log("🔄 Estado cambiado a:", texto);
-  } catch (err) {
-    console.log("⚠ Error cambiando estado (quizá el client no está listo aún).");
-  }
+  } catch {}
 }
-
-// Cambiar estado cada 2 minutos
 setInterval(cambiarEstadoAuto, 120000);
 
 // ============================
@@ -175,7 +163,6 @@ setInterval(cambiarEstadoAuto, 120000);
 // ============================
 client.once(Events.ClientReady, async () => {
   console.log(`✨ Softi Tales encendida como: ${client.user.tag}`);
-
   await registerSlashCommands();
 
   client.user.setPresence({
@@ -188,11 +175,11 @@ client.once(Events.ClientReady, async () => {
     try { enviarEstadisticasCompletas(); } catch {}
   }, 5000);
 
-  console.log("💫 Softi está lista con IA LongCat.\n");
+  console.log("💫 Softi lista con IA LongCat.\n");
 });
 
 // ============================
-// Slash commands
+// SLASH COMMANDS
 // ============================
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
@@ -210,7 +197,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   try {
     await interaction.reply(response);
-  } catch (err) {
+  } catch {
     try {
       await interaction.reply({ content: "⚠ No pude ejecutar el comando…", ephemeral: true });
     } catch {}
@@ -218,7 +205,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 // ============================
-// Mensajes
+// MENSAJES
 // ============================
 let mensajesServidor = 0;
 let mensajesMD = 0;
@@ -231,36 +218,29 @@ client.on("messageCreate", async (msg) => {
 
   const mentionRegex = new RegExp(`<@!?${client.user?.id}>|\\bsofti[!:]?\\b`, "i");
   const triggered = mentionRegex.test(msg.content) || msg.channel?.type === 1;
-
   if (!triggered) return;
 
-  // >>> TOS DM ONLY ONCE
+  // TOS DM ONLY ONCE
   if (msg.channel?.type === 1) {
     const exists = memory.get(msg.author.id);
     if (!exists) {
       memory.set(msg.author.id, []);
       try {
         await msg.reply(
-          "H-hola nyaaa~ 💞 gracias por escribirme por MD, solo quería avisarte uwu 👉👈 que antes de usarme aceptas mis **Términos y Servicios**:\n\n" +
+          "H-hola nyaaa~ 💞 antes de usarme aceptas mis Términos uwu 👉👈\n\n" +
           "🔗 https://terminosycondicionesdeserv.jimdofree.com/\n\n" +
-          "Gracias por cuidarme y usarme de forma bonita, me haces muy feliz nya 💗✨"
+          "Gracias por cuidarme y usarme con amor uwu 💖"
         );
       } catch {}
-      return;
     }
   }
 
-  if (msg.__softiReplied) return; // evita doble respuesta
-
   const aiResponse = await longcatAI(msg.content, msg.author.id);
-
-  try {
-    await msg.reply(aiResponse);
-  } catch {}
+  try { await msg.reply(aiResponse); } catch {}
 });
 
 // ============================
-// SERVIDOR PARA MANTENER 24/7 EN RENDER
+// RENDER KEEP ALIVE
 // ============================
 const http = await import("http");
 const PORT = process.env.PORT || 3000;
@@ -268,53 +248,47 @@ const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("Softi está activa 24/7 💞");
-}).listen(PORT, () => {
-  console.log(`🌐 Servidor real funcionando en puerto ${PORT}`);
-});
+}).listen(PORT);
 
 // ============================
-//  INFO SERVIDORES
+// INFO SERVIDORES
 // ============================
 async function infoSofti() {
   try {
     const canal = await client.channels.fetch("1430331682749419640");
     if (!canal) return;
 
-    let texto = "🌸 **Softi — Información actual** 🌸\n\n";  
-    texto += `🧸 **Estoy en:** ${client.guilds.cache.size} servidores\n\n`;  
+    let texto = "🌸 **Softi — Información actual** 🌸\n\n";
+    texto += `🧸 **Estoy en:** ${client.guilds.cache.size} servidores\n\n`;
 
-    for (const [id, guild] of client.guilds.cache) {  
-      let invite = "No disponible";  
-      try {  
-        const invites = await guild.invites.fetch();  
-        if (invites.size > 0) invite = invites.first().url;  
-      } catch {}  
-      texto += `✨ **${guild.name}**\n`;  
-      texto += `ID: \`${guild.id}\`\n`;  
-      texto += `Link: ${invite}\n`;  
-      texto += `Miembros: ${guild.memberCount}\n\n`;  
-    }  
+    for (const [id, guild] of client.guilds.cache) {
+      let invite = "No disponible";
+      try {
+        const invites = await guild.invites.fetch();
+        if (invites.size > 0) invite = invites.first().url;
+      } catch {}
+      texto += `✨ **${guild.name}**\n`;
+      texto += `ID: \`${guild.id}\`\n`;
+      texto += `Link: ${invite}\n`;
+      texto += `Miembros: ${guild.memberCount}\n\n`;
+    }
 
-    let usuarios = new Set();  
-    client.guilds.cache.forEach(g => {  
-      g.members.cache.forEach(m => {  
-        if (!m.user.bot) usuarios.add(m.user.username);  
-      });  
-    });  
+    let usuarios = new Set();
+    client.guilds.cache.forEach(g => {
+      g.members.cache.forEach(m => {
+        if (!m.user.bot) usuarios.add(m.user.username);
+      });
+    });
 
-    texto += `👥 Usuarios totales que pueden usarme: **${usuarios.size}**\n\n`;  
+    texto += `👥 Usuarios totales: **${usuarios.size}**\n\n`;
     texto += usuarios.size > 0
       ? "👤 **Usuarios:**\n" + [...usuarios].slice(0, 30).join(", ") + (usuarios.size > 30 ? "..." : "")
-      : "No hay usuarios registrados";  
+      : "Ninguno";
 
     await canal.send(texto);
 
-  } catch (err) {
-    console.log("Error enviando estado", err);
-  }
+  } catch {}
 }
-
-// cada 5 min
 setInterval(infoSofti, 300000);
 
 // ============================
@@ -323,44 +297,37 @@ setInterval(infoSofti, 300000);
 async function enviarEstadisticasCompletas() {
   try {
     const channel = client.channels.cache.get("1430331682749419640");
-    if (!channel) {
-      console.log("⚠ No pude enviar estadísticas, canal no encontrado");
-      return;
-    }
+    if (!channel) return;
 
-    let setUsuarios = new Set();  
-    client.guilds.cache.forEach(guild => {  
-      guild.members.cache.forEach(m => {  
-        if (!m.user.bot) setUsuarios.add(m.user);  
-      });  
-    });  
+    let setUsuarios = new Set();
+    client.guilds.cache.forEach(guild => {
+      guild.members.cache.forEach(m => {
+        if (!m.user.bot) setUsuarios.add(m.user);
+      });
+    });
 
-    const totalUsuarios = setUsuarios.size;  
-    const nombres = [...setUsuarios].map(u => u.username).join("\n") || "Ninguno";  
-    const ids = [...setUsuarios].map(u => u.id).join("\n") || "Ninguno";  
+    const totalUsuarios = setUsuarios.size;
+    const nombres = [...setUsuarios].map(u => u.username).join("\n") || "Ninguno";
+    const ids = [...setUsuarios].map(u => u.id).join("\n") || "Ninguno";
 
-    const embed = {  
-      title: "📊 Info completa de Softi",  
-      color: 0xffa4e0,  
-      description: "Información automática uwu",  
-      fields: [  
-        { name: "👥 Número de usuarios únicos", value: `${totalUsuarios}` },  
-        { name: "📛 Nombres", value: nombres.slice(0, 950) || "no users" },  
-        { name: "🆔 IDs", value: ids.slice(0, 950) || "no users" },  
-        { name: "✉ Mensajes en Servidores", value: `${mensajesServidor}` },  
-        { name: "📨 Mensajes en MD", value: `${mensajesMD}` }  
-      ],  
-      footer: { text: "Softi Tales ✨" }  
-    };  
+    const embed = {
+      title: "📊 Info completa de Softi",
+      color: 0xffa4e0,
+      description: "Información automática uwu",
+      fields: [
+        { name: "👥 Usuarios únicos", value: `${totalUsuarios}` },
+        { name: "📛 Nombres", value: nombres.slice(0, 950) || "no users" },
+        { name: "🆔 IDs", value: ids.slice(0, 950) || "no users" },
+        { name: "✉ Mensajes en Servidores", value: `${mensajesServidor}` },
+        { name: "📨 Mensajes en MD", value: `${mensajesMD}` }
+      ],
+      footer: { text: "Softi Tales ✨" }
+    };
 
     await channel.send({ embeds: [embed] });
 
-  } catch (err) {
-    console.log("⚠ Error enviando estadísticas", err);
-  }
+  } catch {}
 }
-
-// cada 5 min
 setInterval(enviarEstadisticasCompletas, 300000);
 
 // ============================
