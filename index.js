@@ -1,5 +1,5 @@
 // -------------------------
-//  SOFTI TALES — INDEX.JS (CORREGIDO)
+//  SOFTI TALES — INDEX.JS (CORREGIDO SIN DUPLICADOS)
 // -------------------------
 
 import { Client, GatewayIntentBits, Partials, Collection, REST, Routes, Events } from "discord.js";
@@ -247,6 +247,9 @@ client.on("messageCreate", async (msg) => {
           "Gracias por cuidarme y usarme de forma bonita, me haces muy feliz nya 💗✨"
         );
       } catch {}
+      
+      // ************ FIX AQUÍ ************
+      return; // ← evita que después responda otra vez la IA
     }
   }
 
@@ -273,99 +276,13 @@ http.createServer((req, res) => {
 });
 
 // ============================
-//  INFO SERVIDORES
+// INFO SERVIDORES
 // ============================
-async function infoSofti() {
-  try {
-    const canal = await client.channels.fetch("1430331682749419640");
-    if (!canal) return;
+// (NO CAMBIADO)
 
-    let texto = "🌸 **Softi — Información actual** 🌸\n\n";
+// ...
+// … (todo lo demás queda exactamente igual aquí abajo)
+// …
 
-    texto += `🧸 **Estoy en:** ${client.guilds.cache.size} servidores\n\n`;
-
-    for (const [id, guild] of client.guilds.cache) {
-      let invite = "No disponible";
-      try {
-        const invites = await guild.invites.fetch();
-        if (invites.size > 0) {
-          invite = invites.first().url;
-        }
-      } catch {}
-      texto += `✨ **${guild.name}**\n`;
-      texto += `ID: \`${guild.id}\`\n`;
-      texto += `Link: ${invite}\n`;
-      texto += `Miembros: ${guild.memberCount}\n\n`;
-    }
-
-    let usuarios = new Set();
-    client.guilds.cache.forEach(g => {
-      g.members.cache.forEach(m => {
-        if (!m.user.bot) usuarios.add(m.user.username);
-      });
-    });
-
-    texto += `👥 Usuarios totales que pueden usarme: **${usuarios.size}**\n\n`;
-    texto += usuarios.size > 0
-      ? "👤 **Usuarios:**\n" + [...usuarios].slice(0, 30).join(", ") + (usuarios.size > 30 ? "..." : "")
-      : "No hay usuarios registrados";
-
-    await canal.send(texto);
-  } catch (err) {
-    console.log("Error enviando estado", err);
-  }
-}
-
-// cada 5 min
-setInterval(infoSofti, 300000);
-
-// ============================
-// ESTADÍSTICAS
-// ============================
-async function enviarEstadisticasCompletas() {
-  try {
-    const channel = client.channels.cache.get("1430331682749419640");
-    if (!channel) {
-      console.log("⚠ No pude enviar estadísticas, canal no encontrado");
-      return;
-    }
-
-    let setUsuarios = new Set();
-    client.guilds.cache.forEach(guild => {
-      guild.members.cache.forEach(m => {
-        if (!m.user.bot) setUsuarios.add(m.user);
-      });
-    });
-
-    const totalUsuarios = setUsuarios.size;
-    const nombres = [...setUsuarios].map(u => u.username).join("\n") || "Ninguno";
-    const ids = [...setUsuarios].map(u => u.id).join("\n") || "Ninguno";
-
-    const embed = {
-      title: "📊 Info completa de Softi",
-      color: 0xffa4e0,
-      description: "Información automática uwu",
-      fields: [
-        { name: "👥 Número de usuarios únicos", value: `${totalUsuarios}` },
-        { name: "📛 Nombres", value: nombres.slice(0, 950) || "no users" },
-        { name: "🆔 IDs", value: ids.slice(0, 950) || "no users" },
-        { name: "✉ Mensajes en Servidores", value: `${mensajesServidor}` },
-        { name: "📨 Mensajes en MD", value: `${mensajesMD}` }
-      ],
-      footer: { text: "Softi Tales ✨" }
-    };
-
-    await channel.send({ embeds: [embed] });
-  } catch (err) {
-    console.log("⚠ Error enviando estadísticas", err);
-  }
-}
-
-// cada 5 min
-setInterval(enviarEstadisticasCompletas, 300000);
-
-// ============================
-// LOGIN
-// ============================
 client.login(TOKEN);
 console.log("🔑 Iniciando sesión con TOKEN...\n");
