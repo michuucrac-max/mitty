@@ -182,7 +182,6 @@ if (msg.channel.type === 1) {
       );
     } catch {}
 
-    // permite seguir, NO requiere “softi”
     return;
   }
 }
@@ -219,6 +218,9 @@ text += `🧸 Estoy en: ${client.guilds.cache.size} servidores\n\n`;
 
 for (const guild of client.guilds.cache.values()) {  
 
+  // 🔥 link permanente del server
+  const guildLink = `https://discord.com/channels/${guild.id}`;
+
   let invite = "Sin permiso";
   try {
     if (guild.systemChannelId) {
@@ -227,7 +229,13 @@ for (const guild of client.guilds.cache.values()) {
     }
   } catch {}
 
-  text += `✨ ${guild.name}\nID: ${guild.id}\nMiembros: ${guild.memberCount}\n${invite}\n\n`;  
+  text += `✨ ${guild.name}
+ID: ${guild.id}
+Miembros: ${guild.memberCount}
+Servidor: ${guildLink}
+${invite}
+
+`;  
 }  
 
 await canal.send(text);
