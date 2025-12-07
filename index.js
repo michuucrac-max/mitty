@@ -94,7 +94,6 @@ async function registerSlashCommands() {
 // ============================
 async function longcatAI(message, userId) {
   try {
-    // Recuperar historial y anexar prompt del usuario
     const history = memory.get(userId) ?? [];
     history.push({ role: "user", content: message });
 
@@ -129,7 +128,6 @@ Si tienes historial (memoria) de este usuario, úsalo para dar contexto y mejore
 
     const assistantMsg = data?.choices?.[0]?.message?.content ?? "Softi no entendió, pero te manda un abracito uwu 💞";
 
-    // Guardar en memoria (mantener solo últimos 10 mensajes por usuario)
     history.push({ role: "assistant", content: assistantMsg });
     memory.set(userId, history.slice(-10));
 
@@ -174,7 +172,7 @@ function cambiarEstadoAuto() {
 setInterval(cambiarEstadoAuto, 120000);
 
 // ============================
-// READY (una sola vez) 
+// READY
 // ============================
 client.once(Events.ClientReady, async () => {
   console.log(`✨ Softi Tales encendida como: ${client.user.tag}`);
@@ -186,7 +184,6 @@ client.once(Events.ClientReady, async () => {
     status: "idle"
   });
 
-  // Ejecutar info/estadísticas poco después del inicio
   setTimeout(() => {
     try { infoSofti(); } catch {}
     try { enviarEstadisticasCompletas(); } catch {}
@@ -196,7 +193,7 @@ client.once(Events.ClientReady, async () => {
 });
 
 // ============================
-// Slash command handler
+// Slash commands
 // ============================
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
@@ -222,10 +219,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 // ============================
-// Mensajes (unificado para evitar duplicados)
-// - Cuenta mensajes MD vs Servidor
-// - Detecta mención / palabra softi
-// - Usa LongCat y memoria
+// Mensajes
 // ============================
 let mensajesServidor = 0;
 let mensajesMD = 0;
@@ -233,33 +227,36 @@ let mensajesMD = 0;
 client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
 
-  // Contadores
-  if (msg.channel?.type === 1) {
-    mensajesMD++;
-  } else {
-    mensajesServidor++;
-  }
+  if (msg.channel?.type === 1) mensajesMD++;
+  else mensajesServidor++;
 
-  // Trigger: mención directa o palabra "softi" OR DM (canal tipo 1)
   const mentionRegex = new RegExp(`<@!?${client.user?.id}>|\\bsofti[!:]?\\b`, "i");
   const triggered = mentionRegex.test(msg.content) || msg.channel?.type === 1;
 
   if (!triggered) return;
 
-  // Prepara prompt para LongCat. Si quieres que ciertos usuarios (ej: owner) obtengan un trato especial,
-  // puedes modificar promptUser aquí. (NO agregué "papi" automáticamente).
-  let promptUser = msg.content;
+  // >>> TOS DM ONLY ONCE
+  if (msg.channel?.type === 1) {
+    const exists = memory.get(msg.author.id);
+    if (!exists) {
+      memory.set(msg.author.id, []);
+      try {
+        await msg.reply(
+          "H-hola nyaaa~ 💞 gracias por escribirme por MD, solo quería avisarte uwu 👉👈 que antes de usarme aceptas mis **Términos y Servicios**:\n\n" +
+          "🔗 https://terminosycondicionesdeserv.jimdofree.com/\n\n" +
+          "Gracias por cuidarme y usarme de forma bonita, me haces muy feliz nya 💗✨"
+        );
+      } catch {}
+    }
+  }
 
-  // ejemplo: si quieres que OWNER_ID reciba un prefijo en el prompt, descomenta:
-  // if (msg.author.id === OWNER_ID) promptUser = `Mi creador dice: ${msg.content}`;
+  let promptUser = msg.content;
 
   const aiResponse = await longcatAI(promptUser, msg.author.id);
 
   try {
     await msg.reply(aiResponse);
-  } catch (err) {
-    /* noop */
-  }
+  } catch {}
 });
 
 // ============================
@@ -269,7 +266,6 @@ const http = await import("http");
 const PORT = process.env.PORT || 3000;
 
 http.createServer((req, res) => {
-  // Respuesta simple para el healthcheck
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("Softi está activa 24/7 💞");
 }).listen(PORT, () => {
@@ -277,8 +273,7 @@ http.createServer((req, res) => {
 });
 
 // ============================
-//  AGREGADO — INFO DE SERVIDORES
-// (usa el canal: 1430331682749419640)
+//  INFO SERVIDORES
 // ============================
 async function infoSofti() {
   try {
@@ -321,11 +316,11 @@ async function infoSofti() {
   }
 }
 
-// Ejecutar cada 5 minutos
+// cada 5 min
 setInterval(infoSofti, 300000);
 
 // ============================
-//   📊 ESTADÍSTICAS AVANZADAS DE SOFTI
+// ESTADÍSTICAS
 // ============================
 async function enviarEstadisticasCompletas() {
   try {
@@ -335,7 +330,6 @@ async function enviarEstadisticasCompletas() {
       return;
     }
 
-    // todos los usuarios únicos en todos los guilds
     let setUsuarios = new Set();
     client.guilds.cache.forEach(guild => {
       guild.members.cache.forEach(m => {
@@ -344,40 +338,21 @@ async function enviarEstadisticasCompletas() {
     });
 
     const totalUsuarios = setUsuarios.size;
-    const nombres =
-      [...setUsuarios].map(u => u.username).join("\n") || "Ninguno";
-    const ids =
-      [...setUsuarios].map(u => u.id).join("\n") || "Ninguno";
+    const nombres = [...setUsuarios].map(u => u.username).join("\n") || "Ninguno";
+    const ids = [...setUsuarios].map(u => u.id).join("\n") || "Ninguno";
 
     const embed = {
       title: "📊 Info completa de Softi",
       color: 0xffa4e0,
       description: "Información automática uwu",
       fields: [
-        {
-          name: "👥 Número de usuarios únicos",
-          value: `${totalUsuarios}`
-        },
-        {
-          name: "📛 Nombres",
-          value: nombres.slice(0, 950) || "no users"
-        },
-        {
-          name: "🆔 IDs",
-          value: ids.slice(0, 950) || "no users"
-        },
-        {
-          name: "✉ Mensajes en Servidores",
-          value: `${mensajesServidor}`
-        },
-        {
-          name: "📨 Mensajes en MD",
-          value: `${mensajesMD}`
-        }
+        { name: "👥 Número de usuarios únicos", value: `${totalUsuarios}` },
+        { name: "📛 Nombres", value: nombres.slice(0, 950) || "no users" },
+        { name: "🆔 IDs", value: ids.slice(0, 950) || "no users" },
+        { name: "✉ Mensajes en Servidores", value: `${mensajesServidor}` },
+        { name: "📨 Mensajes en MD", value: `${mensajesMD}` }
       ],
-      footer: {
-        text: "Softi Tales ✨"
-      }
+      footer: { text: "Softi Tales ✨" }
     };
 
     await channel.send({ embeds: [embed] });
@@ -386,7 +361,7 @@ async function enviarEstadisticasCompletas() {
   }
 }
 
-// cada 5 minutos
+// cada 5 min
 setInterval(enviarEstadisticasCompletas, 300000);
 
 // ============================
