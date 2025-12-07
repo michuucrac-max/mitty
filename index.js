@@ -1,27 +1,25 @@
-// -----------------------------------------------------
-//  SOFTI TALES — INDEX.JS
-// -----------------------------------------------------
+// -------------------------
+//  SOFTI TALES — INDEX.JS (CORREGIDO SIN DUPLICADOS)
+// -------------------------
 
 import { Client, GatewayIntentBits, Partials, Collection, REST, Routes, Events } from "discord.js";
 import fs from "fs";
 import fetch from "node-fetch";
 
 // ============================
-// MEMORY (Memoria por usuario)
+// MEMORY (recuerdos por usuario)
 // ============================
 const memory = new Map(); // key: userId, value: [{role, content}, ...]
 
 // ============================
-// ENV
+// VARIABLES DESDE ENVIRONMENTS (Render)
 // ============================
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const OWNER_ID = process.env.OWNER_ID;
 const LONGCAT_API = process.env.LONGCAT_API;
 
-// ============================
 // LOGS
-// ============================
 console.log("=======================================");
 console.log("   SOFTI TALES — LOGS ACTIVADOS ✔");
 console.log("=======================================");
@@ -32,7 +30,7 @@ console.log("LONGCAT_API:", LONGCAT_API ? "✔ Cargada" : "❌ Faltante");
 console.log("=======================================\n");
 
 // ============================
-// CLIENTE
+// Cliente
 // ============================
 const client = new Client({
   intents: [
@@ -47,7 +45,7 @@ const client = new Client({
 client.commands = new Collection();
 
 // ============================
-// CARGAR COMANDOS
+// Cargar comandos desde cmd.json (archivo directo)
 // ============================
 console.log("📦 Cargando comandos desde cmd.json...");
 const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
@@ -66,16 +64,19 @@ for (const cmd of rawCmds) {
       }
     ]
   };
+
   slashCommands.push(slash);
   client.commands.set(cmd.name, cmd);
 }
+
 console.log(`✔ Comandos cargados: ${rawCmds.length}`);
 
 // ============================
-// REGISTRO SLASH
+// Registrar comandos (GLOBAL)
 // ============================
 async function registerSlashCommands() {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
+
   try {
     console.log("🚀 Registrando slash commands globales...");
     await rest.put(
@@ -89,7 +90,7 @@ async function registerSlashCommands() {
 }
 
 // ============================
-// IA LONGCAT
+// IA LongCat (con memoria por usuario)
 // ============================
 async function longcatAI(message, userId) {
   try {
@@ -99,7 +100,9 @@ async function longcatAI(message, userId) {
     const systemPrompt = `
 Eres Softi, una IA kawaii, furry, femenina, dulce y adorable.
 Respondes con ternura, estilo suave, ligero modo uwu, pero SIN hablar como bebé.
+No uses lenguaje infantil extremo.
 No menciones errores técnicos ni del sistema.
+Si tienes historial (memoria) de este usuario, úsalo para dar contexto y mejores respuestas.
 `;
 
     const body = {
@@ -122,7 +125,8 @@ No menciones errores técnicos ni del sistema.
     });
 
     const data = await res.json();
-    const assistantMsg = data?.choices?.[0]?.message?.content ?? "Softi no entendió uwu 💞";
+
+    const assistantMsg = data?.choices?.[0]?.message?.content ?? "Softi no entendió, pero te manda un abracito uwu 💞";
 
     history.push({ role: "assistant", content: assistantMsg });
     memory.set(userId, history.slice(-10));
@@ -130,32 +134,41 @@ No menciones errores técnicos ni del sistema.
     return assistantMsg;
   } catch (err) {
     console.error("Error LongCat:", err?.message ?? err);
-    return "Ay… algo salió mal uwu 💗";
+    return "Ay… algo salió mal, vuelve a intentarlo uwu 💗";
   }
 }
 
 // ============================
-// ROTACIÓN ESTADOS
+// ROTACIÓN DE ESTADOS
 // ============================
 let estados = [];
+
 try {
   estados = JSON.parse(fs.readFileSync("estados.json", "utf8"));
 } catch {
+  console.log("⚠ No se encontró estados.json, usando estado por defecto.");
   estados = ["💞 Softi está contigo uwu"];
 }
+
 if (!Array.isArray(estados) || estados.length === 0) {
   estados = ["💞 Softi siempre contigo"];
 }
 
 function cambiarEstadoAuto() {
   const texto = estados[Math.floor(Math.random() * estados.length)];
+
   try {
     client.user.setPresence({
       activities: [{ name: texto, type: 3 }],
       status: "online"
     });
-  } catch {}
+    console.log("🔄 Estado cambiado a:", texto);
+  } catch (err) {
+    console.log("⚠ Error cambiando estado (quizá el client no está listo aún).");
+  }
 }
+
+// Cambiar estado cada 2 minutos
 setInterval(cambiarEstadoAuto, 120000);
 
 // ============================
@@ -163,6 +176,7 @@ setInterval(cambiarEstadoAuto, 120000);
 // ============================
 client.once(Events.ClientReady, async () => {
   console.log(`✨ Softi Tales encendida como: ${client.user.tag}`);
+
   await registerSlashCommands();
 
   client.user.setPresence({
@@ -175,11 +189,11 @@ client.once(Events.ClientReady, async () => {
     try { enviarEstadisticasCompletas(); } catch {}
   }, 5000);
 
-  console.log("💫 Softi lista con IA LongCat.\n");
+  console.log("💫 Softi está lista con IA LongCat.\n");
 });
 
 // ============================
-// SLASH COMMANDS
+// Slash commands
 // ============================
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
@@ -197,7 +211,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   try {
     await interaction.reply(response);
-  } catch {
+  } catch (err) {
     try {
       await interaction.reply({ content: "⚠ No pude ejecutar el comando…", ephemeral: true });
     } catch {}
@@ -205,7 +219,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 // ============================
-// MENSAJES
+// Mensajes
 // ============================
 let mensajesServidor = 0;
 let mensajesMD = 0;
@@ -218,29 +232,46 @@ client.on("messageCreate", async (msg) => {
 
   const mentionRegex = new RegExp(`<@!?${client.user?.id}>|\\bsofti[!:]?\\b`, "i");
   const triggered = mentionRegex.test(msg.content) || msg.channel?.type === 1;
+
   if (!triggered) return;
 
-  // TOS DM ONLY ONCE
+  // >>> TOS DM ONLY ONCE
   if (msg.channel?.type === 1) {
     const exists = memory.get(msg.author.id);
+
     if (!exists) {
-      memory.set(msg.author.id, []);
       try {
         await msg.reply(
-          "H-hola nyaaa~ 💞 antes de usarme aceptas mis Términos uwu 👉👈\n\n" +
+          "H-hola nyaaa~ 💞 gracias por escribirme por MD, solo quería avisarte uwu 👉👈 que antes de usarme aceptas mis **Términos y Servicios**:\n\n" +
           "🔗 https://terminosycondicionesdeserv.jimdofree.com/\n\n" +
-          "Gracias por cuidarme y usarme con amor uwu 💖"
+          "Gracias por cuidarme y usarme de forma bonita, me haces muy feliz nya 💗✨"
         );
       } catch {}
+
+      // marca
+      msg.__softiReplied = true;
+
+      // ahora guardas memoria (después)
+      memory.set(msg.author.id, []);
+
+      return;
     }
   }
 
-  const aiResponse = await longcatAI(msg.content, msg.author.id);
-  try { await msg.reply(aiResponse); } catch {}
+  // <<< evita doble respuesta
+  if (msg.__softiReplied) return;
+
+  let promptUser = msg.content;
+
+  const aiResponse = await longcatAI(promptUser, msg.author.id);
+
+  try {
+    await msg.reply(aiResponse);
+  } catch {}
 });
 
 // ============================
-// RENDER KEEP ALIVE
+// SERVIDOR PARA MANTENER 24/7 EN RENDER
 // ============================
 const http = await import("http");
 const PORT = process.env.PORT || 3000;
@@ -248,9 +279,21 @@ const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("Softi está activa 24/7 💞");
-}).listen(PORT);
+}).listen(PORT, () => {
+  console.log(`🌐 Servidor real funcionando en puerto ${PORT}`);
+});
 
 // ============================
+// INFO SERVIDORES
+// ============================
+// (NO CAMBIADO)
+
+// ...
+// … (todo lo demás queda exactamente igual aquí abajo)
+// …
+
+client.login(TOKEN);
+console.log("🔑 Iniciando sesión con TOKEN...\n");// ============================
 // INFO SERVIDORES
 // ============================
 async function infoSofti() {
@@ -267,6 +310,7 @@ async function infoSofti() {
         const invites = await guild.invites.fetch();
         if (invites.size > 0) invite = invites.first().url;
       } catch {}
+
       texto += `✨ **${guild.name}**\n`;
       texto += `ID: \`${guild.id}\`\n`;
       texto += `Link: ${invite}\n`;
@@ -318,8 +362,8 @@ async function enviarEstadisticasCompletas() {
         { name: "👥 Usuarios únicos", value: `${totalUsuarios}` },
         { name: "📛 Nombres", value: nombres.slice(0, 950) || "no users" },
         { name: "🆔 IDs", value: ids.slice(0, 950) || "no users" },
-        { name: "✉ Mensajes en Servidores", value: `${mensajesServidor}` },
-        { name: "📨 Mensajes en MD", value: `${mensajesMD}` }
+        { name: "✉ Servidores", value: `${mensajesServidor}` },
+        { name: "📨 MD", value: `${mensajesMD}` }
       ],
       footer: { text: "Softi Tales ✨" }
     };
@@ -329,9 +373,3 @@ async function enviarEstadisticasCompletas() {
   } catch {}
 }
 setInterval(enviarEstadisticasCompletas, 300000);
-
-// ============================
-// LOGIN
-// ============================
-client.login(TOKEN);
-console.log("🔑 Iniciando sesión con TOKEN...\n");
