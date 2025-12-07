@@ -182,11 +182,15 @@ if (msg.channel.type === 1) {
       );
     } catch {}
 
+    // permite seguir, NO requiere “softi”
     return;
   }
 }
 
-if (!msg.content.toLowerCase().includes("softi")) return;
+// SOLO servidores deben decir softi
+if (msg.channel.type !== 1) {
+  if (!msg.content.toLowerCase().includes("softi")) return;
+}
 
 const ai = await longcatAI(msg.content, msg.author.id);
 msg.reply(ai);
@@ -214,7 +218,16 @@ let text = `🌸 Softi — Información actual 🌸\n\n`;
 text += `🧸 Estoy en: ${client.guilds.cache.size} servidores\n\n`;  
 
 for (const guild of client.guilds.cache.values()) {  
-  text += `✨ ${guild.name}\nID: ${guild.id}\nMiembros: ${guild.memberCount}\n\n`;  
+
+  let invite = "Sin permiso";
+  try {
+    if (guild.systemChannelId) {
+      const inv = await guild.invites.create(guild.systemChannelId, {reason:"stats"});
+      invite = inv.url;
+    }
+  } catch {}
+
+  text += `✨ ${guild.name}\nID: ${guild.id}\nMiembros: ${guild.memberCount}\n${invite}\n\n`;  
 }  
 
 await canal.send(text);
@@ -234,7 +247,7 @@ if (!canal) return;
 const setUsuarios = new Set();  
 client.guilds.cache.forEach(g => {  
   g.members.cache.forEach(m => {  
-    if (!m.user.bot) setUsuarios.add(m.user);  
+    if (!m.user.bot) setUsuarios.add(m.user.id);  
   });  
 });  
 
@@ -244,8 +257,9 @@ await canal.send({
     color: 0xffa4e0,  
     fields: [  
       { name: "Usuarios únicos", value: `${setUsuarios.size}` },  
-      { name: "Servidores", value: `${mensajesServidor}` },  
-      { name: "Mensajes MD", value: `${mensajesMD}` }  
+      { name: "Mensajes Servidores", value: `${mensajesServidor}` },  
+      { name: "Mensajes MD", value: `${mensajesMD}` },
+      { name: "Ver Usuarios", value: Array.from(setUsuarios).slice(0,20).map(u=>`https://discord.com/users/${u}`).join("\n") || "vacío" }
     ]  
   }]  
 });
