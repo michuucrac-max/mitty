@@ -246,12 +246,14 @@ client.on("messageCreate", async (msg) => {
           "🔗 https://terminosycondicionesdeserv.jimdofree.com/\n\n" +
           "Gracias por cuidarme y usarme de forma bonita, me haces muy feliz nya 💗✨"
         );
+        msg.__softiReplied = true; //  <<<<  NUEVO
       } catch {}
-      
-      // ************ FIX AQUÍ ************
-      return; // ← evita que después responda otra vez la IA
+      return;
     }
   }
+
+  // <<< FIX evita segundo mensaje
+  if (msg.__softiReplied) return;
 
   let promptUser = msg.content;
 
