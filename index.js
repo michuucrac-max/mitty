@@ -238,21 +238,27 @@ client.on("messageCreate", async (msg) => {
   // >>> TOS DM ONLY ONCE
   if (msg.channel?.type === 1) {
     const exists = memory.get(msg.author.id);
+
     if (!exists) {
-      memory.set(msg.author.id, []);
       try {
         await msg.reply(
           "H-hola nyaaa~ 💞 gracias por escribirme por MD, solo quería avisarte uwu 👉👈 que antes de usarme aceptas mis **Términos y Servicios**:\n\n" +
           "🔗 https://terminosycondicionesdeserv.jimdofree.com/\n\n" +
           "Gracias por cuidarme y usarme de forma bonita, me haces muy feliz nya 💗✨"
         );
-        msg.__softiReplied = true; //  <<<<  NUEVO
       } catch {}
+
+      // marca
+      msg.__softiReplied = true;
+
+      // ahora guardas memoria (después)
+      memory.set(msg.author.id, []);
+
       return;
     }
   }
 
-  // <<< FIX evita segundo mensaje
+  // <<< evita doble respuesta
   if (msg.__softiReplied) return;
 
   let promptUser = msg.content;
