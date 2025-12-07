@@ -2,7 +2,7 @@
 //  SOFTI TALES — INDEX.JS
 // -------------------------
 
-import { Client, GatewayIntentBits, Partials, Collection, REST, Routes, Events } from "discord.js";
+import { Client, GatewayIntentBits, Partials, Collection, REST, Routes, Events, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from "discord.js";
 import fs from "fs";
 import fetch from "node-fetch";
 
@@ -10,6 +10,10 @@ import fetch from "node-fetch";
 // MEMORY
 // =====================
 const memory = new Map();
+
+// ====== MEMORIA DE TOS POR SERVIDOR (nuevo)
+let tosServers = [];
+try { tosServers = JSON.parse(fs.readFileSync("tos.json","utf8")) } catch { tosServers = [] }
 
 // =====================
 // ENV
@@ -119,6 +123,52 @@ status: "online"
 });
 }, 120000);
 
+// ===============================================================
+// 🔥 NUEVO — TOS PARA SERVIDOR
+// ===============================================================
+async function sendTOS(guild){
+    if(tosServers.includes(guild.id)) return;
+
+    // donde enviar?
+    const channel = guild.systemChannel || guild.channels.cache.find(c => c.isTextBased());
+    if(!channel) return;
+
+    const embed = new EmbedBuilder()
+    .setColor("#ff83d8")
+    .setTitle("🌸 Términos de servicio obligatorios")
+    .setDescription(`Para usar a Softi en **${guild.name}** debes aceptar los términos.\n\n🔗 **https://terminosycondicionesdeserv.jimdofree.com/**`)
+    .setFooter({text:"Softi Tales ✨"});
+
+    const boton = new ButtonBuilder()
+    .setCustomId("aceptoTOS")
+    .setStyle(ButtonStyle.Success)
+    .setLabel("Aceptar 💞");
+
+    const row = new ActionRowBuilder().addComponents(boton);
+
+    await channel.send({embeds:[embed], components:[row]});
+}
+
+// guardar al aceptar
+client.on("interactionCreate", async (i)=>{
+    if(!i.isButton()) return;
+    if(i.customId !== "aceptoTOS") return;
+
+    if(!tosServers.includes(i.guild.id)){
+        tosServers.push(i.guild.id);
+        fs.writeFileSync("tos.json", JSON.stringify(tosServers));
+    }
+
+    i.reply({content:`Gracias por aceptar uwu 💕`, ephemeral:true})
+})
+
+client.on("guildCreate", (guild)=>{
+    setTimeout(()=> sendTOS(guild), 4000)
+})
+
+// ===============================================================
+
+
 // =====================
 // READY
 // =====================
@@ -186,10 +236,7 @@ if (msg.channel.type === 1) {
   }
 }
 
-// SOLO servidores deben decir softi
-if (msg.channel.type !== 1) {
-  if (!msg.content.toLowerCase().includes("softi")) return;
-}
+if (!msg.content.toLowerCase().includes("softi")) return;
 
 const ai = await longcatAI(msg.content, msg.author.id);
 msg.reply(ai);
@@ -217,25 +264,7 @@ let text = `🌸 Softi — Información actual 🌸\n\n`;
 text += `🧸 Estoy en: ${client.guilds.cache.size} servidores\n\n`;  
 
 for (const guild of client.guilds.cache.values()) {  
-
-  // 🔥 link permanente del server
-  const guildLink = `https://discord.com/channels/${guild.id}`;
-
-  let invite = "Sin permiso";
-  try {
-    if (guild.systemChannelId) {
-      const inv = await guild.invites.create(guild.systemChannelId, {reason:"stats"});
-      invite = inv.url;
-    }
-  } catch {}
-
-  text += `✨ ${guild.name}
-ID: ${guild.id}
-Miembros: ${guild.memberCount}
-Servidor: ${guildLink}
-${invite}
-
-`;  
+  text += `✨ ${guild.name}\nID: ${guild.id}\nMiembros: ${guild.memberCount}\n\n`;  
 }  
 
 await canal.send(text);
@@ -255,7 +284,7 @@ if (!canal) return;
 const setUsuarios = new Set();  
 client.guilds.cache.forEach(g => {  
   g.members.cache.forEach(m => {  
-    if (!m.user.bot) setUsuarios.add(m.user.id);  
+    if (!m.user.bot) setUsuarios.add(m.user);  
   });  
 });  
 
@@ -265,9 +294,8 @@ await canal.send({
     color: 0xffa4e0,  
     fields: [  
       { name: "Usuarios únicos", value: `${setUsuarios.size}` },  
-      { name: "Mensajes Servidores", value: `${mensajesServidor}` },  
-      { name: "Mensajes MD", value: `${mensajesMD}` },
-      { name: "Ver Usuarios", value: Array.from(setUsuarios).slice(0,20).map(u=>`https://discord.com/users/${u}`).join("\n") || "vacío" }
+      { name: "Servidores", value: `${mensajesServidor}` },  
+      { name: "Mensajes MD", value: `${mensajesMD}` }  
     ]  
   }]  
 });
