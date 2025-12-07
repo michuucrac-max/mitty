@@ -158,7 +158,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 // =====================
-// mensajes (IA)
+// mensajes (IA + TOS)
 // =====================
 let mensajesServidor = 0;
 let mensajesMD = 0;
@@ -169,6 +169,25 @@ client.on("messageCreate", async (msg) => {
   if (msg.channel.type === 1) mensajesMD++;
   else mensajesServidor++;
 
+  // ====== TOS SOLO UNA VEZ EN MD ======
+  if (msg.channel.type === 1) {
+    const already = memory.get(msg.author.id);
+    if (!already) {
+      memory.set(msg.author.id, []);
+      try {
+        await msg.reply(
+          "H-hola nyaaa~ 💞 gracias por escribirme por MD, solo quería avisarte uwu 👉👈 " +
+          "que antes de usarme aceptas mis **Términos y Servicios**:\n\n" +
+          "🔗 https://terminosycondicionesdeserv.jimdofree.com/\n\n" +
+          "Gracias por cuidarme y usarme de forma bonita, me haces muy feliz nya 💗✨"
+        );
+      } catch {}
+      return;
+    }
+  }
+  // ===================================
+
+  // Solo responde si mencionan o dicen softi
   if (!msg.content.toLowerCase().includes("softi")) return;
 
   const ai = await longcatAI(msg.content, msg.author.id);
