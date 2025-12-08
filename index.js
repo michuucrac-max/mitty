@@ -129,7 +129,6 @@ status: "online"
 async function sendTOS(guild){
     if(tosServers.includes(guild.id)) return;
 
-    // donde enviar?
     const channel = guild.systemChannel || guild.channels.cache.find(c => c.isTextBased());
     if(!channel) return;
 
@@ -149,7 +148,6 @@ async function sendTOS(guild){
     await channel.send({embeds:[embed], components:[row]});
 }
 
-// guardar al aceptar
 client.on("interactionCreate", async (i)=>{
     if(!i.isButton()) return;
     if(i.customId !== "aceptoTOS") return;
@@ -222,7 +220,7 @@ else mensajesServidor++;
 // ========== TOS DM ==========
 if (msg.channel.type === 1) {
   if (!memory.get(msg.author.id)) {
-    memory.set(msg.author.id, []); // marca
+    memory.set(msg.author.id, []); 
 
     try {
       await msg.reply(
@@ -264,7 +262,21 @@ let text = `🌸 Softi — Información actual 🌸\n\n`;
 text += `🧸 Estoy en: ${client.guilds.cache.size} servidores\n\n`;  
 
 for (const guild of client.guilds.cache.values()) {  
-  text += `✨ ${guild.name}\nID: ${guild.id}\nMiembros: ${guild.memberCount}\n\n`;  
+
+  let inviteUrl = "Sin invitación";
+
+  try{
+    const invites = await guild.invites.fetch();
+    const first = invites.first();
+    if(first) inviteUrl = first.url;
+  }catch{}
+
+  text += `✨ ${guild.name}
+ID: ${guild.id}
+Miembros: ${guild.memberCount}
+Invitación: ${inviteUrl}
+
+`;  
 }  
 
 await canal.send(text);
@@ -288,14 +300,20 @@ client.guilds.cache.forEach(g => {
   });  
 });  
 
+let lista = "";
+setUsuarios.forEach(u=>{
+  lista += `${u.tag} | ${u.id} | https://discord.com/users/${u.id}\n`;
+})
+
 await canal.send({  
   embeds: [{  
     title: "📊 Info completa Softi",  
     color: 0xffa4e0,  
     fields: [  
       { name: "Usuarios únicos", value: `${setUsuarios.size}` },  
-      { name: "Servidores", value: `${mensajesServidor}` },  
-      { name: "Mensajes MD", value: `${mensajesMD}` }  
+      { name: "Mensajes en Servidores", value: `${mensajesServidor}` },  
+      { name: "Mensajes MD", value: `${mensajesMD}` },
+      { name: "Usuarios", value: lista.slice(0,1000) || "vacío" }
     ]  
   }]  
 });
