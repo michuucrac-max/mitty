@@ -232,10 +232,16 @@ if (msg.channel.type === 1) {
 
     return;
   }
+
+  // RESPUESTA DIRECTA SIN NOMBRE EN MD
+  const ai = await longcatAI(msg.content, msg.author.id);
+  return msg.reply(ai);
 }
 
+// SOLO SERVIDORES → necesita decir “softi”
 if (!msg.content.toLowerCase().includes("softi")) return;
 
+// respuesta en servidores
 const ai = await longcatAI(msg.content, msg.author.id);
 msg.reply(ai);
 });
