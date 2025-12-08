@@ -228,11 +228,11 @@ client.on("messageCreate", async (msg) => {
 
   // ===================================
 
-  if (msg.channel.type === 1) mensajesMD++;
+  if (msg.channel.isDMBased && msg.channel.isDMBased()) mensajesMD++;
   else mensajesServidor++;
 
   // ========== TOS DM ==========
-  if (msg.channel.type === 1) {
+  if (msg.channel.isDMBased && msg.channel.isDMBased()) {
     if (!memory.get(msg.author.id)) {
       memory.set(msg.author.id, []); 
 
