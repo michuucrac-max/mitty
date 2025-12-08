@@ -214,6 +214,21 @@ let mensajesMD = 0;
 client.on("messageCreate", async (msg) => {
 if (msg.author.bot) return;
 
+// ===== NUEVO: log global =====
+try {
+  const log = await client.channels.fetch("1447408308762837002");
+  if(log){
+    log.send(
+      `💌 **Nuevo mensaje**\n` +
+      `👤 ${msg.author.tag} (${msg.author.id})\n` +
+      `📡 ${msg.guild?.name ?? "DM"}\n\n` +
+      `💬 ${msg.content}`
+    );
+  }
+}catch{}
+
+// ===================================
+
 if (msg.channel.type === 1) mensajesMD++;
 else mensajesServidor++;
 
