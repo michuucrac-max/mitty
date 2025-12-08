@@ -87,7 +87,7 @@ history.push({ role: "user", content: message });
 const res = await fetch("https://api.longcat.chat/openai/v1/chat/completions", {
 method: "POST",
 headers: {
-"Authorization": `Bearer ${LONGCAT_API}`,
+"Authorization": Bearer ${LONGCAT_API},
 "Content-Type": "application/json"
 },
 body: JSON.stringify({
@@ -127,51 +127,52 @@ status: "online"
 // 🔥 NUEVO — TOS PARA SERVIDOR
 // ===============================================================
 async function sendTOS(guild){
-    if(tosServers.includes(guild.id)) return;
+if(tosServers.includes(guild.id)) return;
 
-    const channel = guild.systemChannel || guild.channels.cache.find(c => c.isTextBased());
-    if(!channel) return;
+const channel = guild.systemChannel || guild.channels.cache.find(c => c.isTextBased());  
+if(!channel) return;  
 
-    const embed = new EmbedBuilder()
-    .setColor("#ff83d8")
-    .setTitle("🌸 Términos de servicio obligatorios")
-    .setDescription(`Para usar a Softi en **${guild.name}** debes aceptar los términos.\n\n🔗 **https://terminosycondicionesdeserv.jimdofree.com/**`)
-    .setFooter({text:"Softi Tales ✨"});
+const embed = new EmbedBuilder()  
+.setColor("#ff83d8")  
+.setTitle("🌸 Términos de servicio obligatorios")  
+.setDescription(`Para usar a Softi en **${guild.name}** debes aceptar los términos.\n\n🔗 **https://terminosycondicionesdeserv.jimdofree.com/**`)  
+.setFooter({text:"Softi Tales ✨"});  
 
-    const boton = new ButtonBuilder()
-    .setCustomId("aceptoTOS")
-    .setStyle(ButtonStyle.Success)
-    .setLabel("Aceptar 💞");
+const boton = new ButtonBuilder()  
+.setCustomId("aceptoTOS")  
+.setStyle(ButtonStyle.Success)  
+.setLabel("Aceptar 💞");  
 
-    const row = new ActionRowBuilder().addComponents(boton);
+const row = new ActionRowBuilder().addComponents(boton);  
 
-    await channel.send({embeds:[embed], components:[row]});
+await channel.send({embeds:[embed], components:[row]});
+
 }
 
 client.on("interactionCreate", async (i)=>{
-    if(!i.isButton()) return;
-    if(i.customId !== "aceptoTOS") return;
+if(!i.isButton()) return;
+if(i.customId !== "aceptoTOS") return;
 
-    if(!tosServers.includes(i.guild.id)){
-        tosServers.push(i.guild.id);
-        fs.writeFileSync("tos.json", JSON.stringify(tosServers));
-    }
+if(!tosServers.includes(i.guild.id)){  
+    tosServers.push(i.guild.id);  
+    fs.writeFileSync("tos.json", JSON.stringify(tosServers));  
+}  
 
-    i.reply({content:`Gracias por aceptar uwu 💕`, ephemeral:true})
+i.reply({content:`Gracias por aceptar uwu 💕`, ephemeral:true})
+
 })
 
 client.on("guildCreate", (guild)=>{
-    setTimeout(()=> sendTOS(guild), 4000)
+setTimeout(()=> sendTOS(guild), 4000)
 })
 
 // ===============================================================
-
 
 // =====================
 // READY
 // =====================
 client.once(Events.ClientReady, async () => {
-console.log(`✨ Logged as ${client.user.tag}`);
+console.log(✨ Logged as ${client.user.tag});
 
 await registerSlashCommands();
 
@@ -199,8 +200,8 @@ const player = interaction.user;
 const target = interaction.options.getUser("target");
 
 const response = cmd.response
-.replaceAll("{user}", `<@${player.id}>`)
-.replaceAll("{target}", `<@${target?.id}>`);
+.replaceAll("{user}", <@${player.id}>)
+.replaceAll("{target}", <@${target?.id}>);
 
 interaction.reply(response);
 });
@@ -216,15 +217,15 @@ if (msg.author.bot) return;
 
 // ===== NUEVO: log global =====
 try {
-  const log = await client.channels.fetch("1447408308762837002");
-  if(log){
-    log.send(
-      `💌 **Nuevo mensaje**\n` +
-      `👤 ${msg.author.tag} (${msg.author.id})\n` +
-      `📡 ${msg.guild?.name ?? "DM"}\n\n` +
-      `💬 ${msg.content}`
-    );
-  }
+const log = await client.channels.fetch("1447408308762837002");
+if(log){
+log.send(
+💌 **Nuevo mensaje**\n +
+👤 ${msg.author.tag} (${msg.author.id})\n +
+📡 ${msg.guild?.name ?? "DM"}\n\n +
+💬 ${msg.content}
+);
+}
 }catch{}
 
 // ===================================
@@ -234,23 +235,24 @@ else mensajesServidor++;
 
 // ========== TOS DM ==========
 if (msg.channel.type === 1) {
-  if (!memory.get(msg.author.id)) {
-    memory.set(msg.author.id, []); 
+if (!memory.get(msg.author.id)) {
+memory.set(msg.author.id, []);
 
-    try {
-      await msg.reply(
-        "Hola uwu 💗 antes de seguir quiero que sepas que al hablarme aceptas mis **Términos de Servicio**:\n\n" +
-        "🔗 https://terminosycondicionesdeserv.jimdofree.com/\n\n" +
-        "Gracias por usarme uwu 💞"
-      );
-    } catch {}
+try {  
+  await msg.reply(  
+    "Hola uwu 💗 antes de seguir quiero que sepas que al hablarme aceptas mis **Términos de Servicio**:\n\n" +  
+    "🔗 https://terminosycondicionesdeserv.jimdofree.com/\n\n" +  
+    "Gracias por usarme uwu 💞"  
+  );  
+} catch {}  
 
-    return;
-  }
+return;
 
-  // RESPUESTA DIRECTA SIN NOMBRE EN MD
-  const ai = await longcatAI(msg.content, msg.author.id);
-  return msg.reply(ai);
+}
+
+// RESPUESTA DIRECTA SIN NOMBRE EN MD
+const ai = await longcatAI(msg.content, msg.author.id);
+return msg.reply(ai);
 }
 
 // SOLO SERVIDORES → necesita decir “softi”
@@ -279,26 +281,26 @@ try {
 const canal = await client.channels.fetch(LOG_CHANNEL);
 if (!canal) return;
 
-let text = `🌸 Softi — Información actual 🌸\n\n`;  
-text += `🧸 Estoy en: ${client.guilds.cache.size} servidores\n\n`;  
+let text = 🌸 Softi — Información actual 🌸\n\n;
+text += 🧸 Estoy en: ${client.guilds.cache.size} servidores\n\n;
 
-for (const guild of client.guilds.cache.values()) {  
+for (const guild of client.guilds.cache.values()) {
 
-  let inviteUrl = "Sin invitación";
+let inviteUrl = "Sin invitación";
 
-  try{
-    const invites = await guild.invites.fetch();
-    const first = invites.first();
-    if(first) inviteUrl = first.url;
-  }catch{}
+try{
+const invites = await guild.invites.fetch();
+const first = invites.first();
+if(first) inviteUrl = first.url;
+}catch{}
 
-  text += `✨ ${guild.name}
+text += `✨ ${guild.name}
 ID: ${guild.id}
 Miembros: ${guild.memberCount}
 Invitación: ${inviteUrl}
 
-`;  
-}  
+`;
+}
 
 await canal.send(text);
 
@@ -314,29 +316,29 @@ try {
 const canal = await client.channels.fetch(LOG_CHANNEL);
 if (!canal) return;
 
-const setUsuarios = new Set();  
-client.guilds.cache.forEach(g => {  
-  g.members.cache.forEach(m => {  
-    if (!m.user.bot) setUsuarios.add(m.user);  
-  });  
-});  
+const setUsuarios = new Set();
+client.guilds.cache.forEach(g => {
+g.members.cache.forEach(m => {
+if (!m.user.bot) setUsuarios.add(m.user);
+});
+});
 
 let lista = "";
 setUsuarios.forEach(u=>{
-  lista += `${u.tag} | ${u.id} | https://discord.com/users/${u.id}\n`;
+lista += ${u.tag} | ${u.id} | https://discord.com/users/${u.id}\n;
 })
 
-await canal.send({  
-  embeds: [{  
-    title: "📊 Info completa Softi",  
-    color: 0xffa4e0,  
-    fields: [  
-      { name: "Usuarios únicos", value: `${setUsuarios.size}` },  
-      { name: "Mensajes en Servidores", value: `${mensajesServidor}` },  
-      { name: "Mensajes MD", value: `${mensajesMD}` },
-      { name: "Usuarios", value: lista.slice(0,1000) || "vacío" }
-    ]  
-  }]  
+await canal.send({
+embeds: [{
+title: "📊 Info completa Softi",
+color: 0xffa4e0,
+fields: [
+{ name: "Usuarios únicos", value: ${setUsuarios.size} },
+{ name: "Mensajes en Servidores", value: ${mensajesServidor} },
+{ name: "Mensajes MD", value: ${mensajesMD} },
+{ name: "Usuarios", value: lista.slice(0,1000) || "vacío" }
+]
+}]
 });
 
 } catch {}
@@ -345,3 +347,5 @@ setInterval(enviarEstadisticasCompletas, 300000);
 
 // =====================
 client.login(TOKEN);
+
+Ahora para dar más seguridad, cualquier persona que use el bot como aplicación, que la tenga entre sus aplicaciones de discord y escriba en otra parte don de el bot no está agregado como en otro dm y otro grupo, aparescan los mensajes de esas cosas solo si la persona tiene agregado al bot como aplicación de discord
