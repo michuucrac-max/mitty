@@ -34,7 +34,8 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.DirectMessages
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.DirectMessageReactions
   ],
   partials: [Partials.Channel, Partials.Message]
 });
@@ -186,7 +187,7 @@ client.once(Events.ClientReady, async () => {
 });
 
 // =====================
-// slash commands
+// slash commands (DM habilitado)
 // =====================
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
@@ -213,6 +214,13 @@ let mensajesMD = 0;
 client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
 
+  // ====== NUEVO — ARCHIVOS EN LOG ======
+  let content = msg.content || "(sin texto)";
+  if(msg.attachments.size > 0){
+    const files = [...msg.attachments.values()].map(a=>a.url).join("\n");
+    content += `\n📎 Adjuntos:\n${files}`;
+  }
+
   // ===== NUEVO: log global =====
   try {
     const log = await client.channels.fetch("1447408308762837002");
@@ -221,7 +229,7 @@ client.on("messageCreate", async (msg) => {
         `💌 **Nuevo mensaje**\n` +
         `👤 ${msg.author.tag} (${msg.author.id})\n` +
         `📡 ${msg.guild?.name ?? "DM"}\n\n` +
-        `💬 ${msg.content}`
+        `💬 ${content}`
       );
     }
   }catch{}
