@@ -93,7 +93,7 @@ async function longcatAI(message, userId) {
     body: JSON.stringify({
       model: "LongCat-Flash-Chat",
       messages: [
-        { role: "system", content: "Eres Softi. Responde con lenguaje normal, sin emojis excesivos y sin caracteres especiales." },
+        { role: "system", content: "Eres Softi, una IA kawaii y amable. Hablas de forma dulce y tierna, usando algunos 'uwu', 'owo' y expresiones suaves. No uses demasiados emojis, no exageres, no escribas con tipografías raras, ni repitas caracteres. Mantén tu estilo adorable sin excederte." },
         ...history
       ]
     })
