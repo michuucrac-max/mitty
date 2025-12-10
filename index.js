@@ -11,7 +11,7 @@ import fetch from "node-fetch";
 // =====================
 const memory = new Map();
 
-// ====== MEMORIA DE TOS POR SERVIDOR (nuevo)
+// ====== MEMORIA DE TOS POR SERVIDOR
 let tosServers = [];
 try { tosServers = JSON.parse(fs.readFileSync("tos.json","utf8")) } catch { tosServers = [] }
 
@@ -20,10 +20,9 @@ try { tosServers = JSON.parse(fs.readFileSync("tos.json","utf8")) } catch { tosS
 // =====================
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
-const OWNER_ID = process.env.OWNER_ID;
 const LONGCAT_API = process.env.LONGCAT_API;
 
-// Canal donde se envían logs de Info servidores
+// Canal donde se envían logs
 const LOG_CHANNEL = "1430331682749419640";
 
 // =====================
@@ -94,17 +93,17 @@ async function longcatAI(message, userId) {
     body: JSON.stringify({
       model: "LongCat-Flash-Chat",
       messages: [
-        { role: "system", content: "Eres Softi kawaii \\*magia kawaii\\*" },
+        { role: "system", content: "Eres Softi. Responde con lenguaje normal, sin emojis excesivos y sin caracteres especiales." },
         ...history
       ]
     })
   });
 
   const data = await res.json();
-  let respuesta = data?.choices?.[0]?.message?.content ?? "UwU";
+  let respuesta = data?.choices?.[0]?.message?.content ?? "Entendido.";
 
-  // escapamos los asteriscos siempre
-  respuesta = respuesta.replace(/\*/g,"\\*");
+  // limpiar estilos raros
+  respuesta = respuesta.replace(/\*/g,"");
 
   history.push({ role: "assistant", content: respuesta });
   memory.set(userId, history.slice(-10));
@@ -117,7 +116,7 @@ async function longcatAI(message, userId) {
 // =====================
 let estados = [];
 try { estados = JSON.parse(fs.readFileSync("estados.json", "utf8")); }
-catch { estados = ["💞 Softi kawaii uwu"] }
+catch { estados = ["Softi activa"] }
 
 setInterval(() => {
   const texto = estados[Math.floor(Math.random() * estados.length)];
@@ -128,7 +127,7 @@ setInterval(() => {
 }, 120000);
 
 // ===============================================================
-// 🔥 TOS PARA SERVIDOR
+// TOS PARA SERVIDOR
 // ===============================================================
 async function sendTOS(guild){
   if(tosServers.includes(guild.id)) return;
@@ -136,18 +135,21 @@ async function sendTOS(guild){
   const channel = guild.systemChannel || guild.channels.cache.find(c => c.isTextBased());  
   if(!channel) return;  
 
-  const embed = new EmbedBuilder()  
-    .setColor("#ff83d8")  
-    .setTitle("🌸 Términos de servicio obligatorios")  
-    .setDescription(`Para usar a Softi en **${guild.name}** debes aceptar los términos.\n\n🔗 **https://terminosycondicionesdeserv.jimdofree.com/**`)  
-    .setFooter({text:"Softi Tales ✨"});  
+  const embed = new EmbedBuilder()
+    .setColor("#ffb3d9")
+    .setTitle("Términos de servicio obligatorios")
+    .setDescription(
+      `Para utilizar a Softi en este servidor debes aceptar los términos.\n\n` +
+      `Enlace: https://terminosycondicionesdeserv.jimdofree.com/`
+    )
+    .setFooter({text:"Softi Tales"});
 
-  const boton = new ButtonBuilder()  
-    .setCustomId("aceptoTOS")  
-    .setStyle(ButtonStyle.Success)  
-    .setLabel("Aceptar 💞");  
+  const boton = new ButtonBuilder()
+    .setCustomId("aceptoTOS")
+    .setStyle(ButtonStyle.Success)
+    .setLabel("Aceptar");
 
-  const row = new ActionRowBuilder().addComponents(boton);  
+  const row = new ActionRowBuilder().addComponents(boton);
 
   await channel.send({embeds:[embed], components:[row]});
 }
@@ -161,25 +163,23 @@ client.on("interactionCreate", async (i)=>{
     fs.writeFileSync("tos.json", JSON.stringify(tosServers));  
   }  
 
-  i.reply({content:`Gracias por aceptar uwu 💕`, ephemeral:true})
-})
+  i.reply({content:`TOS aceptado.`, ephemeral:true})
+});
 
-client.on("guildCreate", (guild)=>{
-  setTimeout(()=> sendTOS(guild), 4000)
-})
-
-// ===============================================================
+client.on("guildCreate", guild => {
+  setTimeout(()=> sendTOS(guild), 4000);
+});
 
 // =====================
 // READY
 // =====================
 client.once(Events.ClientReady, async () => {
-  console.log(`✨ Logged as ${client.user.tag}`);
+  console.log(`Logged as ${client.user.tag}`);
 
   await registerSlashCommands();
 
   client.user.setPresence({
-    activities: [{ name: "Softi Tales ✨", type: 3 }],
+    activities: [{ name: "Softi Tales", type: 3 }],
     status: "idle"
   });
 
@@ -190,7 +190,7 @@ client.once(Events.ClientReady, async () => {
 });
 
 // =====================
-// slash commands (DM habilitado)
+// slash commands
 // =====================
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
@@ -198,13 +198,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
   const cmd = client.commands.get(interaction.commandName);
   if (!cmd) return;
 
-  const player = interaction.user;
-  const target = interaction.options.getUser("target");
-
   const response = cmd.response
-    .replaceAll("{user}", `<@${player.id}>`)
-    .replaceAll("{target}", `<@${target?.id}>`)
-    .replace(/\*/g,"\\*");
+    .replaceAll("{user}", `<@${interaction.user.id}>`)
+    .replaceAll("{target}", `<@${interaction.options.getUser("target")?.id}>`)
+    .replace(/\*/g,"");
 
   interaction.reply(response);
 });
@@ -218,38 +215,42 @@ let mensajesMD = 0;
 client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
 
+  // log global siempre
   let content = msg.content || "(sin texto)";
   if(msg.attachments.size > 0){
     const files = [...msg.attachments.values()].map(a=>a.url).join("\n");
-    content += `\n📎 Adjuntos:\n${files}`;
+    content += `\nAdjuntos:\n${files}`;
   }
 
   try {
     const log = await client.channels.fetch("1447408308762837002");
     if(log){
       log.send(
-        `💌 **Nuevo mensaje**\n` +
-        `👤 ${msg.author.tag} (${msg.author.id})\n` +
-        `📡 ${msg.guild?.name ?? "DM"}\n\n` +
-        `💬 ${content}`
+        `Nuevo mensaje\n` +
+        `Usuario: ${msg.author.tag} (${msg.author.id})\n` +
+        `Origen: ${msg.guild?.name ?? "DM"}\n\n` +
+        `Contenido: ${content}`
       );
     }
   }catch{}
 
+  // contadores
   if (msg.channel.isDMBased && msg.channel.isDMBased()) mensajesMD++;
   else mensajesServidor++;
 
+  // DM: requiere aceptar TOS la primera vez
   if (msg.channel.isDMBased && msg.channel.isDMBased()) {
+
     if (!memory.get(msg.author.id)) {
-      memory.set(msg.author.id, []); 
+      memory.set(msg.author.id, []);
 
       try {  
-        await msg.reply(  
-          "Hola uwu 💗 antes de seguir quiero que sepas que al hablarme aceptas mis \\\\*Términos de Servicio\\\\*:\n\n" +  
-          "🔗 https://terminosycondicionesdeserv.jimdofree.com/\n\n" +  
-          "Gracias por usarme uwu 💞"  
-        );  
-      } catch {}  
+        await msg.reply(
+          "Antes de continuar debes aceptar los Términos de Servicio.\n\n" +
+          "Enlace: https://terminosycondicionesdeserv.jimdofree.com/\n\n" +
+          "Al continuar, aceptas los términos."
+        );
+      } catch {}
 
       return;
     }
@@ -258,6 +259,7 @@ client.on("messageCreate", async (msg) => {
     return msg.reply(ai);
   }
 
+  // SERVIDORES: solo responde si mencionan "softi"
   if (!msg.content.toLowerCase().includes("softi")) return;
 
   const ai = await longcatAI(msg.content, msg.author.id);
@@ -265,13 +267,13 @@ client.on("messageCreate", async (msg) => {
 });
 
 // =====================
-// servidor render 24/7
+// Servidor 24/7 Render
 // =====================
 const http = await import("http");
 const PORT = process.env.PORT || 3000;
 
 http.createServer((req, res) => {
-  res.end("Softi activa 24/7");
+  res.end("Softi activa");
 }).listen(PORT);
 
 // =====================
@@ -282,23 +284,19 @@ async function infoSofti() {
     const canal = await client.channels.fetch(LOG_CHANNEL);
     if (!canal) return;
 
-    let text = `🌸 Softi — Información actual 🌸\n\n`;  
-    text += `🧸 Estoy en: ${client.guilds.cache.size} servidores\n\n`;  
+    let text = `Información de servidores\n\n`;  
+    text += `Servidores: ${client.guilds.cache.size}\n\n`;  
 
     for (const guild of client.guilds.cache.values()) {  
-      let inviteUrl = "Sin invitación";
+      let inviteUrl = "No disponible";
       try{
         const invites = await guild.invites.fetch();
         const first = invites.first();
         if(first) inviteUrl = first.url;
       }catch{}
-      text += `✨ ${guild.name}
-ID: ${guild.id}
-Miembros: ${guild.memberCount}
-Invitación: ${inviteUrl}
 
-`;
-    }  
+      text += `${guild.name}\nID: ${guild.id}\nMiembros: ${guild.memberCount}\nInvitación: ${inviteUrl}\n\n`;
+    }
 
     await canal.send(text);
   } catch {}
@@ -306,7 +304,7 @@ Invitación: ${inviteUrl}
 setInterval(infoSofti, 300000);
 
 // =====================
-// ESTADÍSTICAS COMPLETAS
+// Estadísticas completas
 // =====================
 async function enviarEstadisticasCompletas() {
   try {
@@ -321,21 +319,21 @@ async function enviarEstadisticasCompletas() {
     });  
 
     let lista = "";
-    setUsuarios.forEach(u=>{
+    setUsuarios.forEach(u => {
       lista += `${u.tag} | ${u.id} | https://discord.com/users/${u.id}\n`;
-    })
+    });
 
-    await canal.send({  
-      embeds: [{  
-        title: "📊 Info completa Softi",  
-        color: 0xffa4e0,  
-        fields: [  
-          { name: "Usuarios únicos", value: `${setUsuarios.size}` },  
-          { name: "Mensajes en Servidores", value: `${mensajesServidor}` },  
-          { name: "Mensajes MD", value: `${mensajesMD}` },
+    await canal.send({
+      embeds: [{
+        title: "Información completa de Softi",
+        color: 0xffb3d9,
+        fields: [
+          { name: "Usuarios únicos", value: `${setUsuarios.size}` },
+          { name: "Mensajes en servidores", value: `${mensajesServidor}` },
+          { name: "Mensajes en MD", value: `${mensajesMD}` },
           { name: "Usuarios", value: lista.slice(0,1000) || "vacío" }
-        ]  
-      }]  
+        ]
+      }]
     });
 
   } catch {}
