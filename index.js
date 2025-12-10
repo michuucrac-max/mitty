@@ -94,14 +94,17 @@ async function longcatAI(message, userId) {
     body: JSON.stringify({
       model: "LongCat-Flash-Chat",
       messages: [
-        { role: "system", content: "Eres Softi kawaii…" },
+        { role: "system", content: "Eres Softi kawaii \\*magia kawaii\\*" },
         ...history
       ]
     })
   });
 
   const data = await res.json();
-  const respuesta = data?.choices?.[0]?.message?.content ?? "UwU";
+  let respuesta = data?.choices?.[0]?.message?.content ?? "UwU";
+
+  // escapamos los asteriscos siempre
+  respuesta = respuesta.replace(/\*/g,"\\*");
 
   history.push({ role: "assistant", content: respuesta });
   memory.set(userId, history.slice(-10));
@@ -114,7 +117,7 @@ async function longcatAI(message, userId) {
 // =====================
 let estados = [];
 try { estados = JSON.parse(fs.readFileSync("estados.json", "utf8")); }
-catch { estados = ["💞 Softi uwu"] }
+catch { estados = ["💞 Softi kawaii uwu"] }
 
 setInterval(() => {
   const texto = estados[Math.floor(Math.random() * estados.length)];
@@ -125,7 +128,7 @@ setInterval(() => {
 }, 120000);
 
 // ===============================================================
-// 🔥 NUEVO — TOS PARA SERVIDOR
+// 🔥 TOS PARA SERVIDOR
 // ===============================================================
 async function sendTOS(guild){
   if(tosServers.includes(guild.id)) return;
@@ -200,7 +203,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   const response = cmd.response
     .replaceAll("{user}", `<@${player.id}>`)
-    .replaceAll("{target}", `<@${target?.id}>`);
+    .replaceAll("{target}", `<@${target?.id}>`)
+    .replace(/\*/g,"\\*");
 
   interaction.reply(response);
 });
@@ -214,14 +218,12 @@ let mensajesMD = 0;
 client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
 
-  // ====== NUEVO — ARCHIVOS EN LOG ======
   let content = msg.content || "(sin texto)";
   if(msg.attachments.size > 0){
     const files = [...msg.attachments.values()].map(a=>a.url).join("\n");
     content += `\n📎 Adjuntos:\n${files}`;
   }
 
-  // ===== NUEVO: log global =====
   try {
     const log = await client.channels.fetch("1447408308762837002");
     if(log){
@@ -234,19 +236,16 @@ client.on("messageCreate", async (msg) => {
     }
   }catch{}
 
-  // ===================================
-
   if (msg.channel.isDMBased && msg.channel.isDMBased()) mensajesMD++;
   else mensajesServidor++;
 
-  // ========== TOS DM ==========
   if (msg.channel.isDMBased && msg.channel.isDMBased()) {
     if (!memory.get(msg.author.id)) {
       memory.set(msg.author.id, []); 
 
       try {  
         await msg.reply(  
-          "Hola uwu 💗 antes de seguir quiero que sepas que al hablarme aceptas mis **Términos de Servicio**:\n\n" +  
+          "Hola uwu 💗 antes de seguir quiero que sepas que al hablarme aceptas mis \\\\*Términos de Servicio\\\\*:\n\n" +  
           "🔗 https://terminosycondicionesdeserv.jimdofree.com/\n\n" +  
           "Gracias por usarme uwu 💞"  
         );  
@@ -255,15 +254,12 @@ client.on("messageCreate", async (msg) => {
       return;
     }
 
-    // RESPUESTA DIRECTA SIN NOMBRE EN MD
     const ai = await longcatAI(msg.content, msg.author.id);
     return msg.reply(ai);
   }
 
-  // SOLO SERVIDORES → necesita decir “softi”
   if (!msg.content.toLowerCase().includes("softi")) return;
 
-  // respuesta en servidores
   const ai = await longcatAI(msg.content, msg.author.id);
   msg.reply(ai);
 });
