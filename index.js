@@ -344,5 +344,3 @@ setInterval(enviarEstadisticasCompletas, 300000);
 
 // =====================
 client.login(TOKEN);
-
-Dámelo con todo el index y que en vez de 15s sea 10s
