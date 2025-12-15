@@ -37,7 +37,7 @@ try {
 }
 
 // =====================
-// YOUTUBE RSS MEMORY
+// YOUTUBE RSS MEMORIA
 // =====================
 let ytMemory = {};
 try {
@@ -95,7 +95,10 @@ for (const cmd of rawCmds) {
 // =====================
 async function registerSlashCommands() {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
-  await rest.put(Routes.applicationCommands(CLIENT_ID), { body: slashCommands });
+  await rest.put(
+    Routes.applicationCommands(CLIENT_ID),
+    { body: slashCommands }
+  );
 }
 
 // =====================
@@ -105,20 +108,23 @@ async function longcatAI(message, userId) {
   const history = memory.get(userId) ?? [];
   history.push({ role: "user", content: message });
 
-  const res = await fetch("https://api.longcat.chat/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LONGCAT_API}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "LongCat-Flash-Chat",
-      messages: [
-        { role: "system", content: "Eres Softi, una IA kawaii y amable." },
-        ...history
-      ]
-    })
-  });
+  const res = await fetch(
+    "https://api.longcat.chat/openai/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LONGCAT_API}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "LongCat-Flash-Chat",
+        messages: [
+          { role: "system", content: "Eres Softi, una IA kawaii y amable." },
+          ...history
+        ]
+      })
+    }
+  );
 
   const data = await res.json();
   let respuesta = data?.choices?.[0]?.message?.content ?? "Entendido 💖";
@@ -149,19 +155,21 @@ function rotarEstado() {
 }
 
 // =====================
-// BUSCAR CANAL
+// BUSCAR CANAL POR NOMBRE
 // =====================
 function buscarCanal(guild, palabras) {
   return guild.channels.cache.find(
-    c => c.isTextBased() && palabras.some(p => c.name.toLowerCase().includes(p))
+    c =>
+      c.isTextBased() &&
+      palabras.some(p => c.name.toLowerCase().includes(p))
   );
 }
 
 // =====================
-// YOUTUBE RSS
+// YOUTUBE RSS (SIN API)
 // =====================
 const YT_FEEDS = [
-  // EJEMPLOS (puedes cambiar IDs)
+  // 🔁 Cambia o agrega más canales aquí
   "https://www.youtube.com/feeds/videos.xml?channel_id=UC-lHJZR3Gqxm24_Vd_AJ5Yw"
 ];
 
@@ -170,6 +178,7 @@ async function revisarYouTube() {
     try {
       const xml = await fetch(feed).then(r => r.text());
       const data = await parseStringPromise(xml);
+
       const video = data.feed.entry?.[0];
       if (!video) continue;
 
@@ -185,7 +194,10 @@ async function revisarYouTube() {
 
       for (const guild of client.guilds.cache.values()) {
         const canal = buscarCanal(guild, [
-          "yt", "youtube", "youtuber", "youtubers"
+          "yt",
+          "youtube",
+          "youtuber",
+          "youtubers"
         ]);
         if (!canal) continue;
 
@@ -210,7 +222,7 @@ client.once(Events.ClientReady, async () => {
   await registerSlashCommands();
   rotarEstado();
   setInterval(rotarEstado, 120000);
-  setInterval(revisarYouTube, 300000); // cada 5 min
+  setInterval(revisarYouTube, 300000); // cada 5 minutos
 });
 
 // =====================
@@ -240,6 +252,7 @@ ${msg.content || "(sin texto)"}`
       );
       return;
     }
+
     const ai = await longcatAI(msg.content, msg.author.id);
     await msg.reply(ai);
     return;
@@ -251,7 +264,7 @@ ${msg.content || "(sin texto)"}`
 });
 
 // =====================
-// 24/7
+// 24/7 (Render)
 // =====================
 const PORT = process.env.PORT || 3000;
 http.createServer((_, res) => {
