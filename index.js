@@ -25,7 +25,9 @@ import http from "http";
 // =====================
 const memory = new Map();
 
-// ====== MEMORIA DE TOS POR SERVIDOR
+// =====================
+// TOS MEMORY
+// =====================
 let tosServers = [];
 try {
   tosServers = JSON.parse(fs.readFileSync("tos.json", "utf8"));
@@ -39,11 +41,10 @@ try {
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const LONGCAT_API = process.env.LONGCAT_API;
-
 const LOG_CHANNEL = "1430331682749419640";
 
 // =====================
-// Cliente
+// CLIENT
 // =====================
 const client = new Client({
   intents: [
@@ -59,7 +60,7 @@ const client = new Client({
 client.commands = new Collection();
 
 // =====================
-// cargar comandos
+// LOAD COMMANDS (cmd.json)
 // =====================
 const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
 const slashCommands = [];
@@ -68,18 +69,14 @@ for (const cmd of rawCmds) {
   slashCommands.push({
     name: cmd.name,
     description: cmd.description,
-    options: [{
-      name: "target",
-      description: "Menciona a alguien",
-      type: 6,
-      required: true
-    }]
+    options: cmd.options ?? []
   });
+
   client.commands.set(cmd.name, cmd);
 }
 
 // =====================
-// registrar slash
+// REGISTER SLASH COMMANDS
 // =====================
 async function registerSlashCommands() {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
@@ -90,7 +87,7 @@ async function registerSlashCommands() {
 }
 
 // =====================
-// LongCat AI
+// LONGCAT AI
 // =====================
 async function longcatAI(message, userId) {
   const history = memory.get(userId) ?? [];
@@ -118,7 +115,7 @@ async function longcatAI(message, userId) {
   );
 
   const data = await res.json();
-  let respuesta = data?.choices?.[0]?.message?.content ?? "Entendido.";
+  let respuesta = data?.choices?.[0]?.message?.content ?? "Entendido 💖";
   respuesta = respuesta.replace(/\*/g, "");
 
   history.push({ role: "assistant", content: respuesta });
@@ -128,7 +125,7 @@ async function longcatAI(message, userId) {
 }
 
 // =====================
-// 🌸 ESTADOS ALEATORIOS
+// ESTADOS
 // =====================
 let estados = [];
 try {
@@ -147,7 +144,7 @@ function rotarEstado() {
 }
 
 // =====================
-// 🔎 BUSCAR CANAL POR NOMBRE
+// SEARCH CHANNEL
 // =====================
 function buscarCanal(guild, palabras) {
   return guild.channels.cache.find(
@@ -158,40 +155,34 @@ function buscarCanal(guild, palabras) {
 }
 
 // =====================
-// 👋 BIENVENIDA
+// WELCOME
 // =====================
 client.on("guildMemberAdd", member => {
   const canal = buscarCanal(member.guild, [
-    "welcome", "bienvenido", "bienvenida", "hola"
+    "welcome", "bienvenido", "hola"
   ]);
-
   if (!canal) return;
 
   canal.send(
     `🌸 ¡Bienvenido/a ${member}!\n` +
-    `Esperamos que la pases súper lindo aquí 💖\n` +
-    `Cualquier cosa, Softi está para ayudarte ✨`
+    `Softi está aquí para ayudarte 💖`
   );
 });
 
 // =====================
-// 😢 DESPEDIDA
+// GOODBYE
 // =====================
 client.on("guildMemberRemove", member => {
   const canal = buscarCanal(member.guild, [
-    "bye", "adios", "despedida", "goodbye", "salida"
+    "bye", "adios", "salida"
   ]);
-
   if (!canal) return;
 
-  canal.send(
-    `💔 ${member.user.tag} se ha ido...\n` +
-    `Le deseamos lo mejor 🌙✨`
-  );
+  canal.send(`💔 ${member.user.tag} se ha ido...`);
 });
 
 // =====================
-// TOS SERVIDOR
+// TOS
 // =====================
 async function sendTOS(guild) {
   if (tosServers.includes(guild.id)) return;
@@ -204,9 +195,9 @@ async function sendTOS(guild) {
 
   const embed = new EmbedBuilder()
     .setColor("#ffb3d9")
-    .setTitle("Términos de servicio obligatorios")
+    .setTitle("Términos de Servicio")
     .setDescription(
-      "Para usar Softi debes aceptar los términos:\n\n" +
+      "Debes aceptar los términos para usar Softi:\n\n" +
       "https://terminosycondicionesdeserv.jimdofree.com/"
     );
 
@@ -221,20 +212,39 @@ async function sendTOS(guild) {
   });
 }
 
+// =====================
+// INTERACTIONS
+// =====================
 client.on("interactionCreate", async i => {
-  if (!i.isButton()) return;
-  if (i.customId !== "aceptoTOS") return;
 
-  if (!tosServers.includes(i.guild.id)) {
-    tosServers.push(i.guild.id);
-    fs.writeFileSync("tos.json", JSON.stringify(tosServers));
+  // ✅ BOTÓN TOS
+  if (i.isButton() && i.customId === "aceptoTOS") {
+    if (!tosServers.includes(i.guild.id)) {
+      tosServers.push(i.guild.id);
+      fs.writeFileSync("tos.json", JSON.stringify(tosServers));
+    }
+    return i.reply({ content: "TOS aceptado 💖", ephemeral: true });
   }
 
-  await i.reply({ content: "TOS aceptado.", ephemeral: true });
-});
+  // ✅ SLASH COMMANDS (cmd.json)
+  if (!i.isChatInputCommand()) return;
 
-client.on("guildCreate", guild => {
-  setTimeout(() => sendTOS(guild), 4000);
+  const cmd = client.commands.get(i.commandName);
+  if (!cmd) return;
+
+  try {
+    // EJECUCIÓN SIMPLE (RESPUESTA TEXTO)
+    if (cmd.reply) {
+      await i.reply(cmd.reply);
+    } else {
+      await i.reply("✨ Comando ejecutado");
+    }
+  } catch (e) {
+    console.error(e);
+    if (!i.replied) {
+      await i.reply({ content: "Error ejecutando el comando", ephemeral: true });
+    }
+  }
 });
 
 // =====================
@@ -248,53 +258,50 @@ client.once(Events.ClientReady, async () => {
 });
 
 // =====================
-// MENSAJES
+// MESSAGES
 // =====================
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
 
+  // LOG
   try {
     const log = await client.channels.fetch(LOG_CHANNEL);
     if (log) {
       await log.send(
-        `Nuevo mensaje
-Usuario: ${msg.author.tag} (${msg.author.id})
-Origen: ${msg.guild?.name ?? "DM"}
-
-Contenido:
-${msg.content || "(sin texto)"}`
+        `Usuario: ${msg.author.tag}\n` +
+        `Origen: ${msg.guild?.name ?? "DM"}\n\n` +
+        `${msg.content || "(sin texto)"}`
       );
     }
   } catch {}
 
+  // DM
   if (msg.channel.isDMBased()) {
     if (!memory.has(msg.author.id)) {
       memory.set(msg.author.id, []);
-      await msg.reply(
-        "Al hablar conmigo aceptas mis Términos de Servicio:\n" +
+      return msg.reply(
+        "Al hablar conmigo aceptas mis TOS:\n" +
         "https://terminosycondicionesdeserv.jimdofree.com/"
       );
-      return;
     }
 
     const ai = await longcatAI(msg.content, msg.author.id);
-    await msg.reply(ai);
-    return;
+    return msg.reply(ai);
   }
 
+  // MENTION
   if (!msg.content.toLowerCase().includes("softi")) return;
-
   const ai = await longcatAI(msg.content, msg.author.id);
-  await msg.reply(ai);
+  msg.reply(ai);
 });
 
 // =====================
-// 24/7 Render
+// 24/7
 // =====================
 const PORT = process.env.PORT || 3000;
-http.createServer((req, res) => {
-  res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end("Softi activa");
+http.createServer((_, res) => {
+  res.writeHead(200);
+  res.end("Softi activa 💖");
 }).listen(PORT);
 
 // =====================
