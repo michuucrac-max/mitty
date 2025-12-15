@@ -19,7 +19,6 @@ import {
 import fs from "fs";
 import fetch from "node-fetch";
 import http from "http";
-import { parseStringPromise } from "xml2js";
 
 // =====================
 // MEMORY
@@ -155,7 +154,7 @@ function rotarEstado() {
 }
 
 // =====================
-// BUSCAR CANAL POR NOMBRE
+// BUSCAR CANAL
 // =====================
 function buscarCanal(guild, palabras) {
   return guild.channels.cache.find(
@@ -166,48 +165,52 @@ function buscarCanal(guild, palabras) {
 }
 
 // =====================
-// YOUTUBE RSS (SIN API)
+// YOUTUBE RSS (SIN LIBRERÍAS)
 // =====================
 const YT_FEEDS = [
-  // 🔁 Cambia o agrega más canales aquí
+  // Reemplaza por los canales que quieras
   "https://www.youtube.com/feeds/videos.xml?channel_id=UC-lHJZR3Gqxm24_Vd_AJ5Yw"
 ];
+
+function extraer(tag, text) {
+  const match = text.match(new RegExp(`<${tag}>(.*?)</${tag}>`, "s"));
+  return match ? match[1] : null;
+}
 
 async function revisarYouTube() {
   for (const feed of YT_FEEDS) {
     try {
       const xml = await fetch(feed).then(r => r.text());
-      const data = await parseStringPromise(xml);
 
-      const video = data.feed.entry?.[0];
-      if (!video) continue;
+      const entry = xml.split("<entry>")[1];
+      if (!entry) continue;
 
-      const videoId = video["yt:videoId"][0];
+      const videoId = extraer("yt:videoId", entry);
+      if (!videoId) continue;
+
       if (ytMemory[feed] === videoId) continue;
 
       ytMemory[feed] = videoId;
       fs.writeFileSync("yt.json", JSON.stringify(ytMemory, null, 2));
 
-      const title = video.title[0];
-      const link = video.link[0].$.href;
-      const author = video.author[0].name[0];
+      const title = extraer("title", entry);
+      const author = extraer("name", entry);
+      const link = `https://www.youtube.com/watch?v=${videoId}`;
 
       for (const guild of client.guilds.cache.values()) {
         const canal = buscarCanal(guild, [
-          "yt",
-          "youtube",
-          "youtuber",
-          "youtubers"
+          "yt", "youtube", "youtuber", "youtubers"
         ]);
         if (!canal) continue;
 
-        canal.send(
+        await canal.send(
           `📺 **Nuevo video en YouTube**\n` +
           `👤 **${author}**\n` +
           `🎬 **${title}**\n` +
           `${link}`
         );
       }
+
     } catch (e) {
       console.error("YT RSS error:", e.message);
     }
@@ -222,7 +225,7 @@ client.once(Events.ClientReady, async () => {
   await registerSlashCommands();
   rotarEstado();
   setInterval(rotarEstado, 120000);
-  setInterval(revisarYouTube, 300000); // cada 5 minutos
+  setInterval(revisarYouTube, 300000); // 5 min
 });
 
 // =====================
@@ -264,7 +267,7 @@ ${msg.content || "(sin texto)"}`
 });
 
 // =====================
-// 24/7 (Render)
+// 24/7 RENDER
 // =====================
 const PORT = process.env.PORT || 3000;
 http.createServer((_, res) => {
