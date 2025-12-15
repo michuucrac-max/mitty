@@ -21,21 +21,6 @@ import fetch from "node-fetch";
 import http from "http";
 
 // =====================
-// MEMORY
-// =====================
-const memory = new Map();
-
-// =====================
-// TOS MEMORIA
-// =====================
-let tosServers = [];
-try {
-  tosServers = JSON.parse(fs.readFileSync("tos.json", "utf8"));
-} catch {
-  tosServers = [];
-}
-
-// =====================
 // ENV
 // =====================
 const TOKEN = process.env.TOKEN;
@@ -58,6 +43,7 @@ const client = new Client({
 });
 
 client.commands = new Collection();
+const memory = new Map();
 
 // =====================
 // LOAD COMMANDS
@@ -69,7 +55,12 @@ for (const cmd of rawCmds) {
   slashCommands.push({
     name: cmd.name,
     description: cmd.description,
-    options: cmd.options ?? []
+    options: [{
+      name: "target",
+      description: "Menciona a alguien",
+      type: 6,
+      required: true
+    }]
   });
   client.commands.set(cmd.name, cmd);
 }
@@ -83,6 +74,24 @@ async function registerSlashCommands() {
     Routes.applicationCommands(CLIENT_ID),
     { body: slashCommands }
   );
+}
+
+// =====================
+// ESTADOS
+// =====================
+let estados = [];
+try {
+  estados = JSON.parse(fs.readFileSync("estados.json", "utf8"));
+} catch {
+  estados = ["Softi activa 💖"];
+}
+
+function rotarEstado() {
+  const texto = estados[Math.floor(Math.random() * estados.length)];
+  client.user.setPresence({
+    activities: [{ name: texto, type: 3 }],
+    status: "online"
+  });
 }
 
 // =====================
@@ -111,89 +120,53 @@ async function longcatAI(message, userId) {
   );
 
   const data = await res.json();
-  let respuesta = data?.choices?.[0]?.message?.content ?? "Entendido 💖";
-  respuesta = respuesta.replace(/\*/g, "");
-
-  history.push({ role: "assistant", content: respuesta });
+  const reply = data?.choices?.[0]?.message?.content ?? "💖";
+  history.push({ role: "assistant", content: reply });
   memory.set(userId, history.slice(-10));
-
-  return respuesta;
-}
-
-// =====================
-// ESTADOS
-// =====================
-let estados = [];
-try {
-  estados = JSON.parse(fs.readFileSync("estados.json", "utf8"));
-} catch {
-  estados = ["Softi activa 💖"];
-}
-
-function rotarEstado() {
-  if (!client.user || estados.length === 0) return;
-  const texto = estados[Math.floor(Math.random() * estados.length)];
-  client.user.setPresence({
-    activities: [{ name: texto, type: 3 }],
-    status: "online"
-  });
-}
-
-// =====================
-// BUSCAR CANAL
-// =====================
-function buscarCanal(guild, palabras) {
-  return guild.channels.cache.find(
-    c => c.isTextBased() &&
-    palabras.some(p => c.name.toLowerCase().includes(p))
-  );
+  return reply.replace(/\*/g, "");
 }
 
 // =====================
 // BIENVENIDA
 // =====================
 client.on("guildMemberAdd", member => {
-  const canal = buscarCanal(member.guild, ["welcome", "bienvenido", "hola"]);
-  if (!canal) return;
-
-  canal.send(`🌸 ¡Bienvenido/a ${member}! 💖`);
+  const canal = member.guild.channels.cache.find(c =>
+    c.isTextBased() &&
+    ["welcome", "bienvenido", "hola"].some(w => c.name.includes(w))
+  );
+  if (canal) canal.send(`🌸 Bienvenido/a ${member} 💖`);
 });
 
 // =====================
 // DESPEDIDA
 // =====================
 client.on("guildMemberRemove", member => {
-  const canal = buscarCanal(member.guild, ["bye", "adios", "salida"]);
-  if (!canal) return;
-
-  canal.send(`💔 ${member.user.tag} se ha ido...`);
+  const canal = member.guild.channels.cache.find(c =>
+    c.isTextBased() &&
+    ["bye", "adios", "salida"].some(w => c.name.includes(w))
+  );
+  if (canal) canal.send(`💔 ${member.user.tag} se ha ido...`);
 });
 
 // =====================
-// INTERACTIONS (SLASH + TOS)
+// SLASH COMMANDS
 // =====================
 client.on("interactionCreate", async interaction => {
-
-  // BOTÓN TOS
-  if (interaction.isButton() && interaction.customId === "aceptoTOS") {
-    if (!tosServers.includes(interaction.guild.id)) {
-      tosServers.push(interaction.guild.id);
-      fs.writeFileSync("tos.json", JSON.stringify(tosServers));
-    }
-    return interaction.reply({ content: "TOS aceptado 💖", ephemeral: true });
-  }
-
-  // SLASH COMMANDS
   if (!interaction.isChatInputCommand()) return;
 
   const cmd = client.commands.get(interaction.commandName);
   if (!cmd) return;
 
-  await interaction.reply(cmd.response ?? "✨ Comando ejecutado");
+  const target = interaction.options.getUser("target");
+  const texto = cmd.reply
+    .replace("{user}", interaction.user.username)
+    .replace("{target}", target.username);
+
+  await interaction.reply(texto);
 });
 
 // =====================
-// MENSAJES
+// MENSAJES (IA)
 // =====================
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
@@ -201,32 +174,23 @@ client.on("messageCreate", async msg => {
   // LOG
   try {
     const log = await client.channels.fetch(LOG_CHANNEL);
-    if (log) {
-      await log.send(`📩 ${msg.author.tag}: ${msg.content || "(sin texto)"}`);
-    }
+    log?.send(`📩 ${msg.author.tag}: ${msg.content}`);
   } catch {}
 
   // DM
   if (msg.channel.isDMBased()) {
-
     if (!memory.has(msg.author.id)) {
       memory.set(msg.author.id, []);
-      await msg.reply(
-        "📜 **Términos de Servicio**\n" +
-        "https://terminosycondicionesdeserv.jimdofree.com/"
+      return msg.reply(
+        "Al hablar conmigo aceptas mis TOS:\nhttps://terminosycondicionesdeserv.jimdofree.com/"
       );
-      return;
     }
-
-    const ai = await longcatAI(msg.content, msg.author.id);
-    return msg.reply(ai);
+    return msg.reply(await longcatAI(msg.content, msg.author.id));
   }
 
-  // SERVIDOR → SOLO SI DICE SOFTI
+  // SOLO si mencionan softi
   if (!msg.content.toLowerCase().includes("softi")) return;
-
-  const ai = await longcatAI(msg.content, msg.author.id);
-  return msg.reply(ai);
+  msg.reply(await longcatAI(msg.content, msg.author.id));
 });
 
 // =====================
@@ -242,10 +206,9 @@ client.once(Events.ClientReady, async () => {
 // =====================
 // 24/7
 // =====================
-const PORT = process.env.PORT || 3000;
 http.createServer((_, res) => {
   res.end("Softi activa 💖");
-}).listen(PORT);
+}).listen(process.env.PORT || 3000);
 
 // =====================
 client.login(TOKEN);
