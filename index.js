@@ -300,5 +300,3 @@ res.end("Softi activa");
 
 // =====================
 client.login(TOKEN);
-
-Dámelo en el index completo
