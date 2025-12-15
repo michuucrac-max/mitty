@@ -100,7 +100,7 @@ const res = await fetch(
 {
 method: "POST",
 headers: {
-"Authorization": `Bearer ${LONGCAT_API}`,
+Authorization: `Bearer ${LONGCAT_API}`,
 "Content-Type": "application/json"
 },
 body: JSON.stringify({
@@ -109,7 +109,7 @@ messages: [
 {
 role: "system",
 content:
-"Eres Softi, una IA kawaii y amable. Hablas de forma dulce y tierna, sin exagerar."
+"Eres Softi, una IA kawaii y amable. Hablas dulce, sin exagerar."
 },
 ...history
 ]
@@ -168,7 +168,7 @@ tosServers.push(i.guild.id);
 fs.writeFileSync("tos.json", JSON.stringify(tosServers));
 }
 
-i.reply({ content: "TOS aceptado.", ephemeral: true });
+await i.reply({ content: "TOS aceptado.", ephemeral: true });
 });
 
 client.on("guildCreate", guild => {
@@ -193,7 +193,7 @@ if (msg.author.bot) return;
 try {
 const log = await client.channels.fetch(LOG_CHANNEL);
 if (log) {
-log.send(
+await log.send(
 `Nuevo mensaje
 Usuario: ${msg.author.tag} (${msg.author.id})
 Origen: ${msg.guild?.name ?? "DM"}
@@ -204,7 +204,7 @@ ${msg.content || "(sin texto)"}`
 }
 } catch {}
 
-// ===== MD
+// ===== DM (RESPONDE SIEMPRE, UNA VEZ)
 if (msg.channel.isDMBased()) {
 if (!memory.has(msg.author.id)) {
 memory.set(msg.author.id, []);
@@ -216,22 +216,28 @@ return;
 }
 
 const ai = await longcatAI(msg.content, msg.author.id);
-return msg.reply(ai);
+await msg.reply(ai);
+return; // 🔴 CORTE DEFINITIVO (evita duplicados)
 }
 
-// ===== SERVIDORES
+// ===== SERVIDORES (solo si dicen softi)
 if (!msg.content.toLowerCase().includes("softi")) return;
 
 const ai = await longcatAI(msg.content, msg.author.id);
-msg.reply(ai);
+await msg.reply(ai);
 });
 
 // =====================
-// 24/7 Render
+// 24/7 Render (OBLIGATORIO)
 // =====================
-http.createServer((_, res) => {
+const PORT = process.env.PORT || 3000;
+
+http.createServer((req, res) => {
+res.writeHead(200, { "Content-Type": "text/plain" });
 res.end("Softi activa");
-}).listen(process.env.PORT || 3000);
+}).listen(PORT, () => {
+console.log(`Servidor HTTP activo en puerto ${PORT}`);
+});
 
 // =====================
 client.login(TOKEN);
