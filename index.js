@@ -21,18 +21,28 @@ import fetch from "node-fetch";
 import http from "http";
 
 // =====================
-// MEMORY
+// MEMORY IA
 // =====================
 const memory = new Map();
 
 // =====================
-// TOS MEMORY
+// TOS MEMORIA
 // =====================
 let tosServers = [];
 try {
   tosServers = JSON.parse(fs.readFileSync("tos.json", "utf8"));
 } catch {
   tosServers = [];
+}
+
+// =====================
+// YT RSS MEMORIA
+// =====================
+let ytMemory = {};
+try {
+  ytMemory = JSON.parse(fs.readFileSync("yt.json", "utf8"));
+} catch {
+  ytMemory = {};
 }
 
 // =====================
@@ -60,7 +70,7 @@ const client = new Client({
 client.commands = new Collection();
 
 // =====================
-// LOAD COMMANDS (cmd.json)
+// CARGAR CMD.JSON
 // =====================
 const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
 const slashCommands = [];
@@ -76,7 +86,7 @@ for (const cmd of rawCmds) {
 }
 
 // =====================
-// REGISTER SLASH COMMANDS
+// REGISTRAR SLASH
 // =====================
 async function registerSlashCommands() {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
@@ -89,9 +99,9 @@ async function registerSlashCommands() {
 // =====================
 // LONGCAT AI
 // =====================
-async function longcatAI(message, userId) {
+async function longcatAI(text, userId) {
   const history = memory.get(userId) ?? [];
-  history.push({ role: "user", content: message });
+  history.push({ role: "user", content: text });
 
   const res = await fetch(
     "https://api.longcat.chat/openai/v1/chat/completions",
@@ -104,10 +114,7 @@ async function longcatAI(message, userId) {
       body: JSON.stringify({
         model: "LongCat-Flash-Chat",
         messages: [
-          {
-            role: "system",
-            content: "Eres Softi, una IA kawaii y amable. Hablas dulce, sin exagerar."
-          },
+          { role: "system", content: "Eres Softi, una IA kawaii y amable." },
           ...history
         ]
       })
@@ -115,13 +122,13 @@ async function longcatAI(message, userId) {
   );
 
   const data = await res.json();
-  let respuesta = data?.choices?.[0]?.message?.content ?? "Entendido 💖";
-  respuesta = respuesta.replace(/\*/g, "");
+  let reply = data?.choices?.[0]?.message?.content ?? "Entendido 💖";
+  reply = reply.replace(/\*/g, "");
 
-  history.push({ role: "assistant", content: respuesta });
+  history.push({ role: "assistant", content: reply });
   memory.set(userId, history.slice(-10));
 
-  return respuesta;
+  return reply;
 }
 
 // =====================
@@ -135,50 +142,37 @@ try {
 }
 
 function rotarEstado() {
-  if (!client.user || estados.length === 0) return;
-  const texto = estados[Math.floor(Math.random() * estados.length)];
+  if (!client.user || !estados.length) return;
   client.user.setPresence({
-    activities: [{ name: texto, type: 3 }],
+    activities: [{ name: estados[Math.floor(Math.random() * estados.length)], type: 3 }],
     status: "online"
   });
 }
 
 // =====================
-// SEARCH CHANNEL
+// BUSCAR CANAL
 // =====================
 function buscarCanal(guild, palabras) {
-  return guild.channels.cache.find(
-    c =>
-      c.isTextBased() &&
-      palabras.some(p => c.name.toLowerCase().includes(p))
+  return guild.channels.cache.find(c =>
+    c.isTextBased() &&
+    palabras.some(p => c.name.toLowerCase().includes(p))
   );
 }
 
 // =====================
-// WELCOME
+// BIENVENIDA
 // =====================
 client.on("guildMemberAdd", member => {
-  const canal = buscarCanal(member.guild, [
-    "welcome", "bienvenido", "hola"
-  ]);
-  if (!canal) return;
-
-  canal.send(
-    `🌸 ¡Bienvenido/a ${member}!\n` +
-    `Softi está aquí para ayudarte 💖`
-  );
+  const canal = buscarCanal(member.guild, ["welcome", "bienvenido", "hola"]);
+  if (canal) canal.send(`🌸 ¡Bienvenido/a ${member}! Disfruta el servidor 💖`);
 });
 
 // =====================
-// GOODBYE
+// DESPEDIDA
 // =====================
 client.on("guildMemberRemove", member => {
-  const canal = buscarCanal(member.guild, [
-    "bye", "adios", "salida"
-  ]);
-  if (!canal) return;
-
-  canal.send(`💔 ${member.user.tag} se ha ido...`);
+  const canal = buscarCanal(member.guild, ["bye", "adios", "despedida"]);
+  if (canal) canal.send(`💔 ${member.user.tag} se ha ido...`);
 });
 
 // =====================
@@ -187,19 +181,13 @@ client.on("guildMemberRemove", member => {
 async function sendTOS(guild) {
   if (tosServers.includes(guild.id)) return;
 
-  const channel =
-    guild.systemChannel ||
-    guild.channels.cache.find(c => c.isTextBased());
-
+  const channel = guild.systemChannel || guild.channels.cache.find(c => c.isTextBased());
   if (!channel) return;
 
   const embed = new EmbedBuilder()
     .setColor("#ffb3d9")
-    .setTitle("Términos de Servicio")
-    .setDescription(
-      "Debes aceptar los términos para usar Softi:\n\n" +
-      "https://terminosycondicionesdeserv.jimdofree.com/"
-    );
+    .setTitle("Términos de servicio")
+    .setDescription("Debes aceptar los TOS:\nhttps://terminosycondicionesdeserv.jimdofree.com/");
 
   const button = new ButtonBuilder()
     .setCustomId("aceptoTOS")
@@ -212,12 +200,14 @@ async function sendTOS(guild) {
   });
 }
 
+client.on("guildCreate", g => setTimeout(() => sendTOS(g), 3000));
+
 // =====================
-// INTERACTIONS
+// INTERACTIONS (CMD + BOTÓN)
 // =====================
 client.on("interactionCreate", async i => {
 
-  // ✅ BOTÓN TOS
+  // BOTÓN TOS
   if (i.isButton() && i.customId === "aceptoTOS") {
     if (!tosServers.includes(i.guild.id)) {
       tosServers.push(i.guild.id);
@@ -226,25 +216,50 @@ client.on("interactionCreate", async i => {
     return i.reply({ content: "TOS aceptado 💖", ephemeral: true });
   }
 
-  // ✅ SLASH COMMANDS (cmd.json)
+  // SLASH COMMANDS
   if (!i.isChatInputCommand()) return;
 
   const cmd = client.commands.get(i.commandName);
   if (!cmd) return;
 
   try {
-    // EJECUCIÓN SIMPLE (RESPUESTA TEXTO)
-    if (cmd.reply) {
-      await i.reply(cmd.reply);
-    } else {
-      await i.reply("✨ Comando ejecutado");
+    let msg = cmd.response ?? "Comando ejecutado 💖";
+
+    if (cmd.mention && i.options.getUser("target")) {
+      msg = msg.replace("{user}", `<@${i.options.getUser("target").id}>`);
     }
-  } catch (e) {
-    console.error(e);
-    if (!i.replied) {
-      await i.reply({ content: "Error ejecutando el comando", ephemeral: true });
-    }
+
+    await i.reply(msg);
+  } catch {
+    await i.reply({ content: "Error al ejecutar el comando", ephemeral: true });
   }
+});
+
+// =====================
+// MENSAJES (IA SIN DUPLICADOS)
+// =====================
+client.on("messageCreate", async msg => {
+  if (msg.author.bot) return;
+
+  // LOG
+  try {
+    const log = await client.channels.fetch(LOG_CHANNEL);
+    if (log) log.send(`📩 ${msg.author.tag}: ${msg.content || "(sin texto)"}`);
+  } catch {}
+
+  // DM
+  if (msg.channel.isDMBased()) {
+    if (!memory.has(msg.author.id)) {
+      memory.set(msg.author.id, []);
+      return msg.reply("Al hablar conmigo aceptas mis TOS 💖");
+    }
+    return msg.reply(await longcatAI(msg.content, msg.author.id));
+  }
+
+  // SOLO SI MENCIONAN "softi"
+  if (!msg.content.toLowerCase().includes("softi")) return;
+
+  await msg.reply(await longcatAI(msg.content, msg.author.id));
 });
 
 // =====================
@@ -255,44 +270,6 @@ client.once(Events.ClientReady, async () => {
   await registerSlashCommands();
   rotarEstado();
   setInterval(rotarEstado, 120000);
-});
-
-// =====================
-// MESSAGES
-// =====================
-client.on("messageCreate", async msg => {
-  if (msg.author.bot) return;
-
-  // LOG
-  try {
-    const log = await client.channels.fetch(LOG_CHANNEL);
-    if (log) {
-      await log.send(
-        `Usuario: ${msg.author.tag}\n` +
-        `Origen: ${msg.guild?.name ?? "DM"}\n\n` +
-        `${msg.content || "(sin texto)"}`
-      );
-    }
-  } catch {}
-
-  // DM
-  if (msg.channel.isDMBased()) {
-    if (!memory.has(msg.author.id)) {
-      memory.set(msg.author.id, []);
-      return msg.reply(
-        "Al hablar conmigo aceptas mis TOS:\n" +
-        "https://terminosycondicionesdeserv.jimdofree.com/"
-      );
-    }
-
-    const ai = await longcatAI(msg.content, msg.author.id);
-    return msg.reply(ai);
-  }
-
-  // MENTION
-  if (!msg.content.toLowerCase().includes("softi")) return;
-  const ai = await longcatAI(msg.content, msg.author.id);
-  msg.reply(ai);
 });
 
 // =====================
