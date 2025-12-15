@@ -21,21 +21,6 @@ import fetch from "node-fetch";
 import http from "http";
 
 // =====================
-// MEMORY
-// =====================
-const memory = new Map();
-
-// =====================
-// TOS MEMORY
-// =====================
-let tosServers = [];
-try {
-  tosServers = JSON.parse(fs.readFileSync("tos.json", "utf8"));
-} catch {
-  tosServers = [];
-}
-
-// =====================
 // ENV
 // =====================
 const TOKEN = process.env.TOKEN;
@@ -60,7 +45,22 @@ const client = new Client({
 client.commands = new Collection();
 
 // =====================
-// LOAD COMMANDS (cmd.json)
+// MEMORY IA
+// =====================
+const memory = new Map();
+
+// =====================
+// TOS MEMORY
+// =====================
+let tosServers = [];
+try {
+  tosServers = JSON.parse(fs.readFileSync("tos.json", "utf8"));
+} catch {
+  tosServers = [];
+}
+
+// =====================
+// LOAD COMMANDS
 // =====================
 const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
 const slashCommands = [];
@@ -71,19 +71,17 @@ for (const cmd of rawCmds) {
     description: cmd.description,
     options: cmd.options ?? []
   });
-
   client.commands.set(cmd.name, cmd);
 }
 
 // =====================
-// REGISTER SLASH COMMANDS
+// REGISTER SLASH
 // =====================
 async function registerSlashCommands() {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
-  await rest.put(
-    Routes.applicationCommands(CLIENT_ID),
-    { body: slashCommands }
-  );
+  await rest.put(Routes.applicationCommands(CLIENT_ID), {
+    body: slashCommands
+  });
 }
 
 // =====================
@@ -106,7 +104,8 @@ async function longcatAI(message, userId) {
         messages: [
           {
             role: "system",
-            content: "Eres Softi, una IA kawaii y amable. Hablas dulce, sin exagerar."
+            content:
+              "Eres Softi, una IA kawaii, dulce y amable. Hablas bonito sin exagerar."
           },
           ...history
         ]
@@ -115,13 +114,12 @@ async function longcatAI(message, userId) {
   );
 
   const data = await res.json();
-  let respuesta = data?.choices?.[0]?.message?.content ?? "Entendido 💖";
-  respuesta = respuesta.replace(/\*/g, "");
+  let reply = data?.choices?.[0]?.message?.content ?? "Entendido 💖";
+  reply = reply.replace(/\*/g, "");
 
-  history.push({ role: "assistant", content: respuesta });
+  history.push({ role: "assistant", content: reply });
   memory.set(userId, history.slice(-10));
-
-  return respuesta;
+  return reply;
 }
 
 // =====================
@@ -135,10 +133,10 @@ try {
 }
 
 function rotarEstado() {
-  if (!client.user || estados.length === 0) return;
-  const texto = estados[Math.floor(Math.random() * estados.length)];
+  if (!client.user) return;
+  const estado = estados[Math.floor(Math.random() * estados.length)];
   client.user.setPresence({
-    activities: [{ name: texto, type: 3 }],
+    activities: [{ name: estado, type: 3 }],
     status: "online"
   });
 }
@@ -155,7 +153,7 @@ function buscarCanal(guild, palabras) {
 }
 
 // =====================
-// WELCOME
+// BIENVENIDA CUTE
 // =====================
 client.on("guildMemberAdd", member => {
   const canal = buscarCanal(member.guild, [
@@ -164,13 +162,14 @@ client.on("guildMemberAdd", member => {
   if (!canal) return;
 
   canal.send(
-    `🌸 ¡Bienvenido/a ${member}!\n` +
-    `Softi está aquí para ayudarte 💖`
+    `🌸 **¡Bienvenido/a ${member}!** 🌸\n` +
+    `Siéntete como en casa ✨\n` +
+    `Softi te manda un abracito virtual 💖`
   );
 });
 
 // =====================
-// GOODBYE
+// DESPEDIDA CUTE
 // =====================
 client.on("guildMemberRemove", member => {
   const canal = buscarCanal(member.guild, [
@@ -178,7 +177,10 @@ client.on("guildMemberRemove", member => {
   ]);
   if (!canal) return;
 
-  canal.send(`💔 ${member.user.tag} se ha ido...`);
+  canal.send(
+    `💔 **${member.user.username} se fue...**\n` +
+    `Softi le desea lo mejor 🌙✨`
+  );
 });
 
 // =====================
@@ -195,15 +197,15 @@ async function sendTOS(guild) {
 
   const embed = new EmbedBuilder()
     .setColor("#ffb3d9")
-    .setTitle("Términos de Servicio")
+    .setTitle("📜 Términos de Servicio")
     .setDescription(
-      "Debes aceptar los términos para usar Softi:\n\n" +
+      "Para usar a Softi debes aceptar los TOS:\n\n" +
       "https://terminosycondicionesdeserv.jimdofree.com/"
     );
 
   const button = new ButtonBuilder()
     .setCustomId("aceptoTOS")
-    .setLabel("Aceptar")
+    .setLabel("Aceptar 💖")
     .setStyle(ButtonStyle.Success);
 
   await channel.send({
@@ -212,12 +214,12 @@ async function sendTOS(guild) {
   });
 }
 
+client.on("guildCreate", sendTOS);
+
 // =====================
 // INTERACTIONS
 // =====================
 client.on("interactionCreate", async i => {
-
-  // ✅ BOTÓN TOS
   if (i.isButton() && i.customId === "aceptoTOS") {
     if (!tosServers.includes(i.guild.id)) {
       tosServers.push(i.guild.id);
@@ -226,39 +228,79 @@ client.on("interactionCreate", async i => {
     return i.reply({ content: "TOS aceptado 💖", ephemeral: true });
   }
 
-  // ✅ SLASH COMMANDS (cmd.json)
   if (!i.isChatInputCommand()) return;
 
   const cmd = client.commands.get(i.commandName);
   if (!cmd) return;
 
-  try {
-    // EJECUCIÓN SIMPLE (RESPUESTA TEXTO)
-    if (cmd.reply) {
-      await i.reply(cmd.reply);
-    } else {
-      await i.reply("✨ Comando ejecutado");
-    }
-  } catch (e) {
-    console.error(e);
-    if (!i.replied) {
-      await i.reply({ content: "Error ejecutando el comando", ephemeral: true });
-    }
-  }
+  let reply = cmd.reply ?? "✨ Comando ejecutado";
+  reply = reply
+    .replace("{user}", i.user.username)
+    .replace("{target}", i.options.getUser("target")?.username ?? "");
+
+  await i.reply(reply);
 });
+
+// =====================
+// YOUTUBE RSS (SIN API)
+// =====================
+const YT_CHANNELS = [
+  ["MrBeast", "UCX6OQ3DkcsbYNE6H8uQQuVA"],
+  ["PewDiePie", "UC-lHJZR3Gqxm24_Vd_AJ5Yw"],
+  ["Pato Prensado", "UCn5vK9J6nHTKf2kKZ5qVnBQ"],
+  ["Plechito", "UCzKq5Zqk7A2nB0JQ2GQy2Zw"],
+  ["SB737", "UCp68_FLety0O-n9QU6phsgw"],
+  ["Ibai", "UCaY_-ksFSQtTGk0y1HA_3YQ"],
+  ["AuronPlay", "UCyQqzYXQBUWgBTn4pw_fFSQ"]
+  // Puedes añadir hasta 30 sin problema
+];
+
+let ytMemory = {};
+
+async function revisarYT() {
+  for (const [name, id] of YT_CHANNELS) {
+    try {
+      const xml = await fetch(
+        `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`
+      ).then(r => r.text());
+
+      const videoId = xml.match(/<yt:videoId>(.*?)<\/yt:videoId>/)?.[1];
+      if (!videoId || ytMemory[id] === videoId) continue;
+
+      ytMemory[id] = videoId;
+
+      const title = xml.match(/<title>(.*?)<\/title>/)?.[1];
+      const link = `https://www.youtube.com/watch?v=${videoId}`;
+
+      for (const guild of client.guilds.cache.values()) {
+        const canal = buscarCanal(guild, [
+          "youtube", "yt", "youtubers", "videos"
+        ]);
+        if (!canal) continue;
+
+        canal.send(
+          `📺 **Nuevo video de ${name}**\n` +
+          `🎬 ${title}\n` +
+          `${link}`
+        );
+      }
+    } catch {}
+  }
+}
 
 // =====================
 // READY
 // =====================
 client.once(Events.ClientReady, async () => {
-  console.log(`Logged as ${client.user.tag}`);
+  console.log(`🦊 Softi lista como ${client.user.tag}`);
   await registerSlashCommands();
   rotarEstado();
   setInterval(rotarEstado, 120000);
+  setInterval(revisarYT, 300000);
 });
 
 // =====================
-// MESSAGES
+// MENSAJES
 // =====================
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
@@ -267,20 +309,19 @@ client.on("messageCreate", async msg => {
   try {
     const log = await client.channels.fetch(LOG_CHANNEL);
     if (log) {
-      await log.send(
-        `Usuario: ${msg.author.tag}\n` +
-        `Origen: ${msg.guild?.name ?? "DM"}\n\n` +
+      log.send(
+        `👤 ${msg.author.tag}\n` +
+        `📍 ${msg.guild?.name ?? "DM"}\n` +
         `${msg.content || "(sin texto)"}`
       );
     }
   } catch {}
 
-  // DM
   if (msg.channel.isDMBased()) {
     if (!memory.has(msg.author.id)) {
       memory.set(msg.author.id, []);
       return msg.reply(
-        "Al hablar conmigo aceptas mis TOS:\n" +
+        "💖 Al hablar conmigo aceptas mis TOS:\n" +
         "https://terminosycondicionesdeserv.jimdofree.com/"
       );
     }
@@ -289,7 +330,6 @@ client.on("messageCreate", async msg => {
     return msg.reply(ai);
   }
 
-  // MENTION
   if (!msg.content.toLowerCase().includes("softi")) return;
   const ai = await longcatAI(msg.content, msg.author.id);
   msg.reply(ai);
@@ -304,5 +344,4 @@ http.createServer((_, res) => {
   res.end("Softi activa 💖");
 }).listen(PORT);
 
-// =====================
 client.login(TOKEN);
