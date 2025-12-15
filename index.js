@@ -48,6 +48,7 @@ const LOG_CHANNEL = "1430331682749419640";
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.DirectMessages
@@ -58,7 +59,7 @@ const client = new Client({
 client.commands = new Collection();
 
 // =====================
-// cargar comandos (cmd.json)
+// cargar comandos
 // =====================
 const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
 const slashCommands = [];
@@ -67,16 +68,13 @@ for (const cmd of rawCmds) {
   slashCommands.push({
     name: cmd.name,
     description: cmd.description,
-    options: [
-      {
-        name: "target",
-        description: "Menciona a alguien",
-        type: 6,
-        required: true
-      }
-    ]
+    options: [{
+      name: "target",
+      description: "Menciona a alguien",
+      type: 6,
+      required: true
+    }]
   });
-
   client.commands.set(cmd.name, cmd);
 }
 
@@ -111,8 +109,7 @@ async function longcatAI(message, userId) {
         messages: [
           {
             role: "system",
-            content:
-              "Eres Softi, una IA kawaii y amable. Hablas dulce, sin exagerar."
+            content: "Eres Softi, una IA kawaii y amable. Hablas dulce, sin exagerar."
           },
           ...history
         ]
@@ -122,7 +119,6 @@ async function longcatAI(message, userId) {
 
   const data = await res.json();
   let respuesta = data?.choices?.[0]?.message?.content ?? "Entendido.";
-
   respuesta = respuesta.replace(/\*/g, "");
 
   history.push({ role: "assistant", content: respuesta });
@@ -130,6 +126,69 @@ async function longcatAI(message, userId) {
 
   return respuesta;
 }
+
+// =====================
+// 🌸 ESTADOS ALEATORIOS
+// =====================
+let estados = [];
+try {
+  estados = JSON.parse(fs.readFileSync("estados.json", "utf8"));
+} catch {
+  estados = ["Softi activa 💖"];
+}
+
+function rotarEstado() {
+  if (!client.user || estados.length === 0) return;
+  const texto = estados[Math.floor(Math.random() * estados.length)];
+  client.user.setPresence({
+    activities: [{ name: texto, type: 3 }],
+    status: "online"
+  });
+}
+
+// =====================
+// 🔎 BUSCAR CANAL POR NOMBRE
+// =====================
+function buscarCanal(guild, palabras) {
+  return guild.channels.cache.find(
+    c =>
+      c.isTextBased() &&
+      palabras.some(p => c.name.toLowerCase().includes(p))
+  );
+}
+
+// =====================
+// 👋 BIENVENIDA
+// =====================
+client.on("guildMemberAdd", member => {
+  const canal = buscarCanal(member.guild, [
+    "welcome", "bienvenido", "bienvenida", "hola"
+  ]);
+
+  if (!canal) return;
+
+  canal.send(
+    `🌸 ¡Bienvenido/a ${member}!\n` +
+    `Esperamos que la pases súper lindo aquí 💖\n` +
+    `Cualquier cosa, Softi está para ayudarte ✨`
+  );
+});
+
+// =====================
+// 😢 DESPEDIDA
+// =====================
+client.on("guildMemberRemove", member => {
+  const canal = buscarCanal(member.guild, [
+    "bye", "adios", "despedida", "goodbye", "salida"
+  ]);
+
+  if (!canal) return;
+
+  canal.send(
+    `💔 ${member.user.tag} se ha ido...\n` +
+    `Le deseamos lo mejor 🌙✨`
+  );
+});
 
 // =====================
 // TOS SERVIDOR
@@ -148,7 +207,7 @@ async function sendTOS(guild) {
     .setTitle("Términos de servicio obligatorios")
     .setDescription(
       "Para usar Softi debes aceptar los términos:\n\n" +
-        "https://terminosycondicionesdeserv.jimdofree.com/"
+      "https://terminosycondicionesdeserv.jimdofree.com/"
     );
 
   const button = new ButtonBuilder()
@@ -163,33 +222,15 @@ async function sendTOS(guild) {
 }
 
 client.on("interactionCreate", async i => {
-  // ===== BOTÓN TOS
-  if (i.isButton()) {
-    if (i.customId !== "aceptoTOS") return;
+  if (!i.isButton()) return;
+  if (i.customId !== "aceptoTOS") return;
 
-    if (!tosServers.includes(i.guild.id)) {
-      tosServers.push(i.guild.id);
-      fs.writeFileSync("tos.json", JSON.stringify(tosServers));
-    }
-
-    return i.reply({ content: "TOS aceptado.", ephemeral: true });
+  if (!tosServers.includes(i.guild.id)) {
+    tosServers.push(i.guild.id);
+    fs.writeFileSync("tos.json", JSON.stringify(tosServers));
   }
 
-  // ===== SLASH COMMANDS (cmd.json)
-  if (!i.isChatInputCommand()) return;
-
-  const cmd = client.commands.get(i.commandName);
-  if (!cmd) return;
-
-  let response = cmd.response
-    .replaceAll("{user}", `<@${i.user.id}>`)
-    .replaceAll(
-      "{target}",
-      `<@${i.options.getUser("target")?.id}>`
-    )
-    .replace(/\*/g, "");
-
-  await i.reply(response);
+  await i.reply({ content: "TOS aceptado.", ephemeral: true });
 });
 
 client.on("guildCreate", guild => {
@@ -202,6 +243,8 @@ client.on("guildCreate", guild => {
 client.once(Events.ClientReady, async () => {
   console.log(`Logged as ${client.user.tag}`);
   await registerSlashCommands();
+  rotarEstado();
+  setInterval(rotarEstado, 120000);
 });
 
 // =====================
@@ -210,7 +253,6 @@ client.once(Events.ClientReady, async () => {
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
 
-  // ===== LOG GLOBAL
   try {
     const log = await client.channels.fetch(LOG_CHANNEL);
     if (log) {
@@ -225,13 +267,12 @@ ${msg.content || "(sin texto)"}`
     }
   } catch {}
 
-  // ===== DM
   if (msg.channel.isDMBased()) {
     if (!memory.has(msg.author.id)) {
       memory.set(msg.author.id, []);
       await msg.reply(
         "Al hablar conmigo aceptas mis Términos de Servicio:\n" +
-          "https://terminosycondicionesdeserv.jimdofree.com/"
+        "https://terminosycondicionesdeserv.jimdofree.com/"
       );
       return;
     }
@@ -241,7 +282,6 @@ ${msg.content || "(sin texto)"}`
     return;
   }
 
-  // ===== SERVIDORES
   if (!msg.content.toLowerCase().includes("softi")) return;
 
   const ai = await longcatAI(msg.content, msg.author.id);
@@ -252,13 +292,10 @@ ${msg.content || "(sin texto)"}`
 // 24/7 Render
 // =====================
 const PORT = process.env.PORT || 3000;
-
 http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("Softi activa");
-}).listen(PORT, () => {
-  console.log(`Servidor HTTP activo en puerto ${PORT}`);
-});
+}).listen(PORT);
 
 // =====================
 client.login(TOKEN);
