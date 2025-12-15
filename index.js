@@ -65,7 +65,7 @@ const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
 const slashCommands = [];
 
 for (const cmd of rawCmds) {
-  slashCommands.push({
+  const slash = {
     name: cmd.name,
     description: cmd.description,
     options: [
@@ -76,8 +76,9 @@ for (const cmd of rawCmds) {
         required: true
       }
     ]
-  });
+  };
 
+  slashCommands.push(slash);
   client.commands.set(cmd.name, cmd);
 }
 
@@ -114,7 +115,7 @@ async function longcatAI(message, userId) {
           {
             role: "system",
             content:
-              "Eres Softi, una IA kawaii y amable. Hablas de forma dulce y tierna, usando algunos 'uwu', 'owo' y expresiones suaves. No exageres."
+              "Eres Softi, una IA kawaii y amable. Hablas de forma dulce y tierna, usando algunos 'uwu', 'owo' y expresiones suaves. No uses demasiados emojis, no exageres, no escribas con tipografías raras, ni repitas caracteres. Mantén tu estilo adorable sin excederte."
           },
           ...history
         ]
@@ -125,7 +126,7 @@ async function longcatAI(message, userId) {
   const data = await res.json();
   let respuesta = data?.choices?.[0]?.message?.content ?? "Entendido.";
 
-  // quitar asteriscos
+  // limpiar asteriscos
   respuesta = respuesta.replace(/\*/g, "");
 
   history.push({ role: "assistant", content: respuesta });
@@ -152,9 +153,9 @@ setInterval(() => {
   });
 }, 120000);
 
-// =====================
+// ===============================================================
 // TOS PARA SERVIDOR
-// =====================
+// ===============================================================
 async function sendTOS(guild) {
   if (tosServers.includes(guild.id)) return;
 
@@ -168,8 +169,8 @@ async function sendTOS(guild) {
     .setColor("#ffb3d9")
     .setTitle("Términos de servicio obligatorios")
     .setDescription(
-      "Para usar Softi debes aceptar los términos:\n\n" +
-      "https://terminosycondicionesdeserv.jimdofree.com/"
+      "Para utilizar a Softi en este servidor debes aceptar los términos.\n\n" +
+      "Enlace: https://terminosycondicionesdeserv.jimdofree.com/"
     )
     .setFooter({ text: "Softi Tales" });
 
@@ -192,7 +193,7 @@ client.on("interactionCreate", async i => {
     fs.writeFileSync("tos.json", JSON.stringify(tosServers));
   }
 
-  await i.reply({ content: "TOS aceptado.", ephemeral: true });
+  i.reply({ content: "TOS aceptado.", ephemeral: true });
 });
 
 client.on("guildCreate", guild => {
@@ -230,7 +231,7 @@ client.on(Events.InteractionCreate, async interaction => {
     )
     .replace(/\*/g, "");
 
-  await interaction.reply(response);
+  interaction.reply(response);
 });
 
 // =====================
@@ -239,33 +240,11 @@ client.on(Events.InteractionCreate, async interaction => {
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
 
-  // LOG GLOBAL
-  let content = msg.content || "(sin texto)";
-  if (msg.attachments.size > 0) {
-    const files = [...msg.attachments.values()]
-      .map(a => a.url)
-      .join("\n");
-    content += `\nAdjuntos:\n${files}`;
-  }
-
-  try {
-    const log = await client.channels.fetch("1447408308762837002");
-    if (log) {
-      log.send(
-        `Nuevo mensaje\n` +
-        `Usuario: ${msg.author.tag} (${msg.author.id})\n` +
-        `Origen: ${msg.guild?.name ?? "DM"}\n\n` +
-        `Contenido:\n${content}`
-      );
-    }
-  } catch {}
-
-  // DM
   if (msg.channel.isDMBased()) {
     if (!memory.get(msg.author.id)) {
       memory.set(msg.author.id, []);
       await msg.reply(
-        "Antes de continuar debes aceptar los TOS:\n" +
+        "Antes de continuar debes aceptar los Términos de Servicio.\n\n" +
         "https://terminosycondicionesdeserv.jimdofree.com/"
       );
       return;
@@ -275,22 +254,11 @@ client.on("messageCreate", async msg => {
     return msg.reply(ai);
   }
 
-  // SERVIDORES
   if (!msg.content.toLowerCase().includes("softi")) return;
 
   const ai = await longcatAI(msg.content, msg.author.id);
   msg.reply(ai);
 });
-
-// =====================
-// Servidor 24/7 Render
-// =====================
-import http from "http";
-
-const PORT = process.env.PORT || 3000;
-http.createServer((req, res) => {
-  res.end("Softi activa");
-}).listen(PORT);
 
 // =====================
 client.login(TOKEN);
