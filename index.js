@@ -60,7 +60,7 @@ try {
 }
 
 // =====================
-// LOAD COMMANDS
+// LOAD COMMANDS (cmd.json)
 // =====================
 const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
 const slashCommands = [];
@@ -176,13 +176,12 @@ const mensajesDespedida = [
 // =====================
 client.on("guildMemberAdd", member => {
   const canal = buscarCanal(member.guild, [
-    "bienvenido", "bienvenida", "bienvenidos", "welcome", "hola", "saludos"
+    "bienvenido", "bienvenida", "welcome", "hola"
   ]);
   if (!canal) return;
 
   const msg =
     mensajesBienvenida[Math.floor(Math.random() * mensajesBienvenida.length)];
-
   canal.send(msg(member));
 });
 
@@ -191,13 +190,12 @@ client.on("guildMemberAdd", member => {
 // =====================
 client.on("guildMemberRemove", member => {
   const canal = buscarCanal(member.guild, [
-    "adios", "adiós", "bye", "despedida", "despedidas", "salida", "hasta-luego"
+    "adios", "bye", "despedida", "salida"
   ]);
   if (!canal) return;
 
   const msg =
     mensajesDespedida[Math.floor(Math.random() * mensajesDespedida.length)];
-
   canal.send(msg(member));
 });
 
@@ -235,7 +233,7 @@ async function sendTOS(guild) {
 client.on("guildCreate", sendTOS);
 
 // =====================
-// INTERACTIONS
+// INTERACTIONS (CMD.JSON FIX)
 // =====================
 client.on("interactionCreate", async i => {
   if (i.isButton() && i.customId === "aceptoTOS") {
@@ -249,12 +247,14 @@ client.on("interactionCreate", async i => {
   if (!i.isChatInputCommand()) return;
 
   const cmd = client.commands.get(i.commandName);
-  if (!cmd) return;
+  if (!cmd || !cmd.response) {
+    return i.reply({ content: "❌ Comando roto", ephemeral: true });
+  }
 
-  let reply = cmd.reply ?? "✨ Comando ejecutado";
-  reply = reply
+  const target = i.options.getUser("target");
+  let reply = cmd.response
     .replace("{user}", i.user.username)
-    .replace("{target}", i.options.getUser("target")?.username ?? "");
+    .replace("{target}", target ? target.username : "al aire");
 
   await i.reply(reply);
 });
@@ -274,17 +274,6 @@ client.once(Events.ClientReady, async () => {
 // =====================
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
-
-  try {
-    const log = await client.channels.fetch(LOG_CHANNEL);
-    if (log) {
-      log.send(
-        `👤 ${msg.author.tag}\n` +
-        `📍 ${msg.guild?.name ?? "DM"}\n` +
-        `${msg.content || "(sin texto)"}`
-      );
-    }
-  } catch {}
 
   if (msg.channel.isDMBased()) {
     if (!memory.has(msg.author.id)) {
