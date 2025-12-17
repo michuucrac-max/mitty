@@ -42,6 +42,7 @@ const client = new Client({
 
 client.commands = new Collection();
 const memory = new Map();
+const tosUsersDM = new Set();
 
 // =====================
 // FILES
@@ -70,7 +71,7 @@ const tosMessage = () =>
   "💖 Gracias por cuidar de Softi";
 
 // =====================
-// LOAD CMDS (cmd.json)
+// LOAD CMDS
 // =====================
 const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
 const slashCommands = [];
@@ -136,9 +137,8 @@ async function longcatAI(message, userId) {
 // INTERACTIONS
 // =====================
 client.on(Events.InteractionCreate, async interaction => {
-  // ---------- BOTONES TOS ----------
+  // BOTONES TOS
   if (interaction.isButton()) {
-    // TOS EN SERVIDOR
     if (interaction.customId === "aceptar_tos_server") {
       aceptarTOSServidor(interaction.guildId);
       return interaction.update({
@@ -147,10 +147,10 @@ client.on(Events.InteractionCreate, async interaction => {
       });
     }
 
-    // TOS EN DM
     if (interaction.customId === "aceptar_tos_dm") {
+      tosUsersDM.add(interaction.user.id);
       return interaction.update({
-        content: "✅ **TOS aceptados en MD** 💖\nYa puedes hablar con Softi",
+        content: "✅ **TOS aceptados en MD** 💖\nAhora puedes hablar con Softi",
         components: []
       });
     }
@@ -160,7 +160,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
   const guildId = interaction.guildId;
 
-  // 🔒 BLOQUEO POR TOS (SERVIDORES)
   if (guildId && !tosServers.includes(guildId)) {
     return interaction.reply({
       content: tosMessage(),
@@ -168,24 +167,13 @@ client.on(Events.InteractionCreate, async interaction => {
     });
   }
 
-  // =====================
-  // COMANDOS DESDE cmd.json
-  // =====================
   const cmd = client.commands.get(interaction.commandName);
   if (!cmd) return;
 
-  let reply = cmd.reply?.replaceAll(
-    "{user}",
-    `<@${interaction.user.id}>`
-  ) ?? "✨";
+  let reply =
+    cmd.reply?.replaceAll("{user}", `<@${interaction.user.id}>`) ?? "✨";
 
-  if (cmd.options?.length) {
-    const target = interaction.options.getUser("target");
-    if (target)
-      reply = reply.replaceAll("{target}", `<@${target.id}>`);
-  }
-
-  return interaction.reply({
+  interaction.reply({
     content: reply,
     allowedMentions: { users: [], roles: [] }
   });
@@ -199,18 +187,23 @@ client.on(Events.MessageCreate, async msg => {
 
   // ===== MD =====
   if (!msg.guild) {
-    const boton = new ButtonBuilder()
-      .setCustomId("aceptar_tos_dm")
-      .setLabel("Aceptar TOS")
-      .setStyle(ButtonStyle.Success);
+    if (!tosUsersDM.has(msg.author.id)) {
+      const boton = new ButtonBuilder()
+        .setCustomId("aceptar_tos_dm")
+        .setLabel("Aceptar TOS")
+        .setStyle(ButtonStyle.Success);
 
-    return msg.reply({
-      content: tosMessage(),
-      components: [new ActionRowBuilder().addComponents(boton)]
-    });
+      return msg.reply({
+        content: tosMessage(),
+        components: [new ActionRowBuilder().addComponents(boton)]
+      });
+    }
+
+    const reply = await longcatAI(msg.content, msg.author.id);
+    return msg.reply(`💬 **Softi dice:**\n\n${reply}`);
   }
 
-  // ===== SERVIDORES SIN TOS =====
+  // ===== SERVIDOR =====
   if (!tosServers.includes(msg.guild.id)) {
     const boton = new ButtonBuilder()
       .setCustomId("aceptar_tos_server")
@@ -223,11 +216,9 @@ client.on(Events.MessageCreate, async msg => {
     });
   }
 
-  // Ignorar comandos
   if (msg.content.startsWith("/") || msg.content.startsWith("!")) return;
 
   const reply = await longcatAI(msg.content, msg.author.id);
-
   msg.reply({
     content: `💬 **Softi dice:**\n\n${reply}`,
     allowedMentions: { repliedUser: false }
@@ -245,11 +236,9 @@ client.once(Events.ClientReady, async () => {
 // =====================
 // KEEP ALIVE
 // =====================
-http
-  .createServer((_, res) => {
-    res.writeHead(200);
-    res.end("Softi viva 💖");
-  })
-  .listen(process.env.PORT || 3000);
+http.createServer((_, res) => {
+  res.writeHead(200);
+  res.end("Softi viva 💖");
+}).listen(process.env.PORT || 3000);
 
 client.login(TOKEN);
