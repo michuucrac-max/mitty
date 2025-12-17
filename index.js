@@ -49,6 +49,18 @@ client.commands = new Collection();
 const memory = new Map();
 
 // =====================
+// LEVEL SYSTEM
+// =====================
+let levels = {};
+try {
+  levels = JSON.parse(fs.readFileSync("levels.json", "utf8"));
+} catch {
+  levels = {};
+}
+
+const TALK_TIME = 20 * 60 * 1000; // 20 minutos
+
+// =====================
 // TOS MEMORY
 // =====================
 let tosServers = [];
@@ -78,10 +90,9 @@ for (const cmd of rawCmds) {
 // =====================
 async function registerSlashCommands() {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
-  await rest.put(
-    Routes.applicationCommands(CLIENT_ID),
-    { body: slashCommands }
-  );
+  await rest.put(Routes.applicationCommands(CLIENT_ID), {
+    body: slashCommands
+  });
 }
 
 // =====================
@@ -114,11 +125,13 @@ async function longcatAI(message, userId) {
   );
 
   const data = await res.json();
-  let reply = data?.choices?.[0]?.message?.content ?? "Entendido 💖";
+  let reply =
+    data?.choices?.[0]?.message?.content ?? "Entendido 💖";
   reply = reply.replace(/\*/g, "");
 
   history.push({ role: "assistant", content: reply });
   memory.set(userId, history.slice(-10));
+
   return reply;
 }
 
@@ -134,7 +147,8 @@ try {
 
 function rotarEstado() {
   if (!client.user) return;
-  const estado = estados[Math.floor(Math.random() * estados.length)];
+  const estado =
+    estados[Math.floor(Math.random() * estados.length)];
   client.user.setPresence({
     activities: [{ name: estado, type: 3 }],
     status: "online"
@@ -142,14 +156,27 @@ function rotarEstado() {
 }
 
 // =====================
-// SEARCH CHANNEL
+// SEARCH CHANNELS
 // =====================
 function buscarCanal(guild, palabras) {
   return guild.channels.cache.find(
     c =>
       c.isTextBased() &&
-      palabras.some(p => c.name.toLowerCase().includes(p))
+      palabras.some(p =>
+        c.name.toLowerCase().includes(p)
+      )
   );
+}
+
+function buscarCanalNivel(guild) {
+  return buscarCanal(guild, [
+    "boost",
+    "level",
+    "nivel",
+    "level-up",
+    "subida",
+    "subida-de-nivel"
+  ]);
 }
 
 // =====================
@@ -170,21 +197,29 @@ const mensajesDespedida = [
 
 client.on("guildMemberAdd", member => {
   const canal = buscarCanal(member.guild, [
-    "bienvenido","welcome","hola"
+    "bienvenido",
+    "welcome",
+    "hola"
   ]);
   if (!canal) return;
   canal.send(
-    mensajesBienvenida[Math.floor(Math.random()*mensajesBienvenida.length)](member)
+    mensajesBienvenida[
+      Math.floor(Math.random() * mensajesBienvenida.length)
+    ](member)
   );
 });
 
 client.on("guildMemberRemove", member => {
   const canal = buscarCanal(member.guild, [
-    "bye","adios","salida"
+    "bye",
+    "adios",
+    "salida"
   ]);
   if (!canal) return;
   canal.send(
-    mensajesDespedida[Math.floor(Math.random()*mensajesDespedida.length)](member)
+    mensajesDespedida[
+      Math.floor(Math.random() * mensajesDespedida.length)
+    ](member)
   );
 });
 
@@ -197,15 +232,13 @@ async function sendTOS(guild) {
   const channel =
     guild.systemChannel ||
     guild.channels.cache.find(c => c.isTextBased());
-
   if (!channel) return;
 
   const embed = new EmbedBuilder()
     .setColor("#ffb3d9")
     .setTitle("📜 Términos de Servicio")
     .setDescription(
-      "Para usar a Softi debes aceptar los TOS:\n\n" +
-      "https://terminosycondicionesdeserv.jimdofree.com/"
+      "Para usar a Softi debes aceptar los TOS:\n\nhttps://terminosycondicionesdeserv.jimdofree.com/"
     );
 
   const button = new ButtonBuilder()
@@ -228,16 +261,25 @@ client.on("interactionCreate", async i => {
   if (i.isButton() && i.customId === "aceptoTOS") {
     if (!tosServers.includes(i.guild.id)) {
       tosServers.push(i.guild.id);
-      fs.writeFileSync("tos.json", JSON.stringify(tosServers));
+      fs.writeFileSync(
+        "tos.json",
+        JSON.stringify(tosServers)
+      );
     }
-    return i.reply({ content: "TOS aceptado 💖", ephemeral: true });
+    return i.reply({
+      content: "TOS aceptado 💖",
+      ephemeral: true
+    });
   }
 
   if (!i.isChatInputCommand()) return;
 
   const cmd = client.commands.get(i.commandName);
   if (!cmd || !cmd.reply)
-    return i.reply({ content: "❌ Comando roto", ephemeral: true });
+    return i.reply({
+      content: "❌ Comando roto",
+      ephemeral: true
+    });
 
   const target = i.options.getUser("target");
   const reply = cmd.reply
@@ -248,44 +290,64 @@ client.on("interactionCreate", async i => {
 });
 
 // =====================
-// YOUTUBE RSS (SIN API)
+// MENSAJES + LEVEL UP
 // =====================
-let youtubers = [];
-let lastVideos = {};
+client.on("messageCreate", async msg => {
+  if (msg.author.bot) return;
 
-try {
-  youtubers = JSON.parse(fs.readFileSync("youtubers.json", "utf8"));
-} catch {
-  youtubers = [];
-}
+  // ---- LEVEL SYSTEM ----
+  if (msg.guild) {
+    const userId = msg.author.id;
+    const now = Date.now();
 
-async function checkYouTubeRSS() {
-  for (const yt of youtubers) {
-    try {
-      const res = await fetch(yt.rss);
-      const text = await res.text();
+    if (!levels[userId]) {
+      levels[userId] = {
+        level: 0,
+        lastTalk: now
+      };
+      fs.writeFileSync(
+        "levels.json",
+        JSON.stringify(levels, null, 2)
+      );
+    } else if (
+      now - levels[userId].lastTalk >= TALK_TIME
+    ) {
+      const oldLevel = levels[userId].level;
+      levels[userId].level++;
+      levels[userId].lastTalk = now;
 
-      const videoId = text.match(/<yt:videoId>(.*?)<\/yt:videoId>/)?.[1];
-      if (!videoId || lastVideos[yt.rss] === videoId) continue;
+      fs.writeFileSync(
+        "levels.json",
+        JSON.stringify(levels, null, 2)
+      );
 
-      lastVideos[yt.rss] = videoId;
-
-      const link = `https://youtu.be/${videoId}`;
-
-      client.guilds.cache.forEach(guild => {
-        const canal = buscarCanal(guild, [
-          "yt","youtube","youtubers"
-        ]);
-        if (!canal) return;
-
-        canal.send(
-          `📺 **${yt.name} subió nuevo video!**\n👉 ${link}`
+      const canalNivel = buscarCanalNivel(msg.guild);
+      if (canalNivel) {
+        canalNivel.send(
+          `🎉 **${msg.author.username} ha subido de nivel ${oldLevel} a ${levels[userId].level}!**\n✨ ¡Felicidades!`
         );
-      });
-
-    } catch {}
+      }
+    }
   }
-}
+
+  // ---- DM IA ----
+  if (msg.channel.isDMBased()) {
+    if (!memory.has(msg.author.id)) {
+      memory.set(msg.author.id, []);
+      return msg.reply(
+        "💖 Al hablar conmigo aceptas mis TOS:\nhttps://terminosycondicionesdeserv.jimdofree.com/"
+      );
+    }
+    return msg.reply(
+      await longcatAI(msg.content, msg.author.id)
+    );
+  }
+
+  // ---- MENCION IA ----
+  if (!msg.content.toLowerCase().includes("softi"))
+    return;
+  msg.reply(await longcatAI(msg.content, msg.author.id));
+});
 
 // =====================
 // READY
@@ -295,37 +357,17 @@ client.once(Events.ClientReady, async () => {
   await registerSlashCommands();
   rotarEstado();
   setInterval(rotarEstado, 120000);
-  setInterval(checkYouTubeRSS, 300000); // 5 min
-});
-
-// =====================
-// MENSAJES
-// =====================
-client.on("messageCreate", async msg => {
-  if (msg.author.bot) return;
-
-  if (msg.channel.isDMBased()) {
-    if (!memory.has(msg.author.id)) {
-      memory.set(msg.author.id, []);
-      return msg.reply(
-        "💖 Al hablar conmigo aceptas mis TOS:\n" +
-        "https://terminosycondicionesdeserv.jimdofree.com/"
-      );
-    }
-    return msg.reply(await longcatAI(msg.content, msg.author.id));
-  }
-
-  if (!msg.content.toLowerCase().includes("softi")) return;
-  msg.reply(await longcatAI(msg.content, msg.author.id));
 });
 
 // =====================
 // 24/7
 // =====================
 const PORT = process.env.PORT || 3000;
-http.createServer((_, res) => {
-  res.writeHead(200);
-  res.end("Softi activa 💖");
-}).listen(PORT);
+http
+  .createServer((_, res) => {
+    res.writeHead(200);
+    res.end("Softi activa 💖");
+  })
+  .listen(PORT);
 
 client.login(TOKEN);
