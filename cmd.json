@@ -125,5 +125,35 @@
     "name": "softitos",
     "description": "Ver los Términos de Servicio 📜",
     "reply": "📜 Puedes leer mis TOS aquí:\nhttps://terminosycondicionesdeserv.jimdofree.com/"
+  },
+  {
+    "name": "softisetwelcome",
+    "description": "Configura los canales de bienvenida y despedida 🌸",
+    "reply": "🌸 Softi está configurando las bienvenidas y despedidas del servidor~ 💖"
+  },
+  {
+    "name": "softiaddyt",
+    "description": "Agrega este canal para avisos de YouTubers 📺",
+    "reply": "📺 Softi marcó este canal para avisos de YouTube~ 💖"
+  },
+  {
+    "name": "softisecreto",
+    "description": "🤫 Un comando secreto de Softi",
+    "reply": "🤫 Shhh~ Softi guarda este secreto para más adelante 💖"
+  },
+  {
+    "name": "softimod",
+    "description": "Herramientas de moderación suave 🛡️",
+    "reply": "🛡️ Softi está preparando su modo moderador~ 🐾"
+  },
+  {
+    "name": "players",
+    "description": "Muestra información sobre jugadores 🎮",
+    "reply": "🎮 Softi está revisando los jugadores activos~ espera un poco 💖"
+  },
+  {
+    "name": "ping",
+    "description": "Muestra el estado y latencia de Softi 📊",
+    "reply": "📊 Softi está comprobando su estado y conexión~ 💖"
   }
 ]
