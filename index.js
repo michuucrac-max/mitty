@@ -79,8 +79,6 @@ async function registerSlashCommands() {
 // LONGCAT AI
 // =====================
 async function longcatAI(message, userId) {
-  console.log("🤖 IA llamada");
-
   const history = memory.get(userId) ?? [];
   history.push({ role: "user", content: message });
 
@@ -139,19 +137,15 @@ const despedida = [
 ];
 
 client.on(Events.GuildMemberAdd, member => {
-  console.log("➕ Nuevo miembro");
   const canal = buscarCanal(member.guild, ["bienvenido", "welcome"]);
   if (!canal) return;
-
   const msg = bienvenida[Math.floor(Math.random() * bienvenida.length)];
   canal.send(msg(member.user));
 });
 
 client.on(Events.GuildMemberRemove, member => {
-  console.log("➖ Miembro salió");
   const canal = buscarCanal(member.guild, ["bye", "salida"]);
   if (!canal) return;
-
   const msg = despedida[Math.floor(Math.random() * despedida.length)];
   canal.send(msg(member.user));
 });
@@ -162,13 +156,23 @@ client.on(Events.GuildMemberRemove, member => {
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
-  console.log("⚡ Slash usado:", interaction.commandName);
+  const userId = interaction.user.id;
 
-  if (!tosServers.includes(interaction.guildId)) {
-    return interaction.reply({
-      content: "📜 Debes aceptar el TOS primero",
-      ephemeral: true
-    });
+  // Check TOS: si es en servidor, se revisa tosServers, si es DM solo tosUsuarios
+  if (interaction.guildId) {
+    if (!tosServers.includes(interaction.guildId)) {
+      return interaction.reply({
+        content: "📜 Debes aceptar el TOS del servidor primero",
+        ephemeral: true
+      });
+    }
+  } else {
+    if (!tosUsuarios.has(userId)) {
+      return interaction.reply({
+        content: "📜 Debes aceptar mis TOS primero (DM)",
+        ephemeral: true
+      });
+    }
   }
 
   const cmd = client.commands.get(interaction.commandName);
@@ -187,9 +191,13 @@ client.on(Events.InteractionCreate, async interaction => {
 // =====================
 client.on(Events.MessageCreate, async msg => {
   if (msg.author.bot) return;
-  if (!msg.content.toLowerCase().includes("softi")) return;
 
   const userId = msg.author.id;
+  const esDM = msg.channel.type === 1 || msg.channel.type === 3; // DM
+
+  // En DM siempre responde, en servidor solo si menciona o dice Softi
+  const contieneSofti = msg.content.toLowerCase().includes("softi");
+  if (!esDM && !msg.mentions.has(client.user) && !contieneSofti) return;
 
   // Si no aceptó TOS
   if (!tosUsuarios.has(userId)) {
