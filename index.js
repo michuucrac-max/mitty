@@ -10,10 +10,7 @@ import {
   REST,
   Routes,
   Events,
-  EmbedBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ActionRowBuilder
+  SlashCommandBuilder
 } from "discord.js";
 
 import fs from "fs";
@@ -35,8 +32,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.DirectMessages
+    GatewayIntentBits.MessageContent
   ],
   partials: [Partials.Channel]
 });
@@ -44,154 +40,178 @@ const client = new Client({
 client.commands = new Collection();
 
 // =====================
-// MEMORY IA
+// LOG HELPER
 // =====================
-const memory = new Map();
+function log(...args) {
+  console.log("🦊 [SOFTI]", ...args);
+}
 
 // =====================
-// TOS MEMORY
+// LOAD WELCOME CHANNELS
 // =====================
-let tosServers = [];
+let welcomeData = {};
 try {
-  tosServers = JSON.parse(fs.readFileSync("tos.json", "utf8"));
+  welcomeData = JSON.parse(fs.readFileSync("welcome.json", "utf8"));
+  log("welcome.json cargado");
 } catch {
-  tosServers = [];
+  log("welcome.json no existe, creando uno nuevo");
+  fs.writeFileSync("welcome.json", "{}");
+  welcomeData = {};
 }
 
 // =====================
-// LOAD COMMANDS
+// SLASH COMMANDS
 // =====================
-const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
-const slashCommands = [];
+const slashCommands = [
+  new SlashCommandBuilder()
+    .setName("setwelcome")
+    .setDescription("Configura el canal de bienvenida")
+    .addChannelOption(opt =>
+      opt
+        .setName("canal")
+        .setDescription("Canal de bienvenida")
+        .setRequired(true)
+    ),
 
-for (const cmd of rawCmds) {
-  slashCommands.push({
-    name: cmd.name,
-    description: cmd.description,
-    options: cmd.options ?? []
-  });
-  client.commands.set(cmd.name, cmd);
-}
+  new SlashCommandBuilder()
+    .setName("ping")
+    .setDescription("Ping de Softi 💖")
+].map(cmd => cmd.toJSON());
 
 // =====================
 // REGISTER SLASH
 // =====================
 async function registerSlashCommands() {
-  const rest = new REST({ version: "10" }).setToken(TOKEN);
-  await rest.put(
-    Routes.applicationCommands(CLIENT_ID),
-    { body: slashCommands }
-  );
+  try {
+    log("Registrando slash commands...");
+    const rest = new REST({ version: "10" }).setToken(TOKEN);
+    await rest.put(
+      Routes.applicationCommands(CLIENT_ID),
+      { body: slashCommands }
+    );
+    log("Slash commands registrados correctamente");
+  } catch (err) {
+    console.error("❌ Error registrando slash:", err);
+  }
 }
-
-// =====================
-// LONGCAT AI
-// =====================
-async function longcatAI(message, userId) {
-  const history = memory.get(userId) ?? [];
-  history.push({ role: "user", content: message });
-
-  const res = await fetch(
-    "https://api.longcat.chat/openai/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LONGCAT_API}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "LongCat-Flash-Chat",
-        messages: [
-          {
-            role: "system",
-            content:
-              "Eres Softi, una IA kawaii, dulce y amable. Hablas bonito sin exagerar."
-          },
-          ...history
-        ]
-      })
-    }
-  );
-
-  const data = await res.json();
-  let reply = data?.choices?.[0]?.message?.content ?? "Entendido 💖";
-  reply = reply.replace(/\*/g, "");
-
-  history.push({ role: "assistant", content: reply });
-  memory.set(userId, history.slice(-10));
-  return reply;
-}
-
-// =====================
-// SEARCH CHANNEL (ARREGLADO)
-// =====================
-function limpiarNombre(nombre) {
-  return nombre
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, ""); // quita emojis y símbolos
-}
-
-function buscarCanal(guild, palabras) {
-  return guild.channels.cache.find(c => {
-    if (!c.isTextBased()) return false;
-    const limpio = limpiarNombre(c.name);
-    return palabras.some(p => limpio.includes(p));
-  });
-}
-
-// =====================
-// BIENVENIDA / DESPEDIDA
-// =====================
-const mensajesBienvenida = [
-  m => `🌸 ¡Bienvenido/a ${m}! Softi te manda un abracito 💖`,
-  m => `✨ ${m} llegó al server ✨`,
-  m => `🦊 Softi dice hola a ${m} 💕`,
-  m => `💫 Nueva personita detectada: ${m}`
-];
-
-const mensajesDespedida = [
-  m => `💔 ${m.user.username} se fue…`,
-  m => `✨ Hasta luego ${m.user.username}`,
-  m => `🕊️ ${m.user.username} salió del server`
-];
-
-client.on("guildMemberAdd", member => {
-  const canal = buscarCanal(member.guild, [
-    "bienvenido", "welcome", "hola"
-  ]);
-  if (!canal) return;
-
-  const msg =
-    mensajesBienvenida[Math.floor(Math.random() * mensajesBienvenida.length)];
-  canal.send(msg(member.user.username));
-});
-
-client.on("guildMemberRemove", member => {
-  const canal = buscarCanal(member.guild, [
-    "bye", "adios", "salida"
-  ]);
-  if (!canal) return;
-
-  const msg =
-    mensajesDespedida[Math.floor(Math.random() * mensajesDespedida.length)];
-  canal.send(msg(member));
-});
 
 // =====================
 // READY
 // =====================
 client.once(Events.ClientReady, async () => {
-  console.log(`🦊 Softi lista como ${client.user.tag}`);
+  log(`Softi lista como ${client.user.tag}`);
   await registerSlashCommands();
 });
 
 // =====================
-// 24/7
+// INTERACTIONS
+// =====================
+client.on(Events.InteractionCreate, async interaction => {
+  if (!interaction.isChatInputCommand()) return;
+
+  log("Comando usado:", interaction.commandName);
+
+  if (interaction.commandName === "ping") {
+    return interaction.reply("🏓 Pong 💖");
+  }
+
+  if (interaction.commandName === "setwelcome") {
+    const canal = interaction.options.getChannel("canal");
+
+    welcomeData[interaction.guild.id] = canal.id;
+    fs.writeFileSync(
+      "welcome.json",
+      JSON.stringify(welcomeData, null, 2)
+    );
+
+    log(
+      `Canal de bienvenida configurado en ${interaction.guild.name}:`,
+      canal.name
+    );
+
+    return interaction.reply({
+      content: `✅ Canal de bienvenida configurado: ${canal}`,
+      ephemeral: true
+    });
+  }
+});
+
+// =====================
+// MENSAJES
+// =====================
+const mensajesBienvenida = [
+  m => `🌸 ¡Bienvenido/a ${m}! Softi te abraza 💖`,
+  m => `✨ ${m} acaba de llegar ✨`,
+  m => `🦊 Softi dice hola a ${m}`,
+  m => `💫 Nueva personita: ${m}`
+];
+
+const mensajesDespedida = [
+  m => `💔 ${m.user.username} se fue…`,
+  m => `🕊️ Hasta luego ${m.user.username}`,
+  m => `✨ ${m.user.username} salió del server`
+];
+
+// =====================
+// GUILD MEMBER ADD
+// =====================
+client.on("guildMemberAdd", member => {
+  log("guildMemberAdd:", member.user.username);
+
+  const canalId = welcomeData[member.guild.id];
+  if (!canalId) {
+    log("No hay canal de bienvenida configurado");
+    return;
+  }
+
+  const canal = member.guild.channels.cache.get(canalId);
+  if (!canal) {
+    log("Canal guardado no existe");
+    return;
+  }
+
+  const msg =
+    mensajesBienvenida[Math.floor(Math.random() * mensajesBienvenida.length)];
+
+  canal.send(msg(member.user.username))
+    .then(() => log("Mensaje de bienvenida enviado"))
+    .catch(err => console.error("❌ Error enviando bienvenida:", err));
+});
+
+// =====================
+// GUILD MEMBER REMOVE
+// =====================
+client.on("guildMemberRemove", member => {
+  log("guildMemberRemove:", member.user.username);
+
+  const canalId = welcomeData[member.guild.id];
+  if (!canalId) return;
+
+  const canal = member.guild.channels.cache.get(canalId);
+  if (!canal) return;
+
+  const msg =
+    mensajesDespedida[Math.floor(Math.random() * mensajesDespedida.length)];
+
+  canal.send(msg(member))
+    .then(() => log("Mensaje de despedida enviado"))
+    .catch(err => console.error("❌ Error enviando despedida:", err));
+});
+
+// =====================
+// 24/7 SERVER
 // =====================
 const PORT = process.env.PORT || 3000;
 http.createServer((_, res) => {
   res.writeHead(200);
   res.end("Softi activa 💖");
-}).listen(PORT);
+}).listen(PORT, () => {
+  log("Servidor HTTP activo en puerto", PORT);
+});
 
-client.login(TOKEN);
+// =====================
+// LOGIN
+// =====================
+client.login(TOKEN)
+  .then(() => log("Login correcto"))
+  .catch(err => console.error("❌ Error login:", err));
