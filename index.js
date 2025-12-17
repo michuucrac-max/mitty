@@ -26,7 +26,6 @@ import http from "http";
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const LONGCAT_API = process.env.LONGCAT_API;
-const LOG_CHANNEL = "1430331682749419640";
 
 // =====================
 // CLIENT
@@ -60,7 +59,7 @@ try {
 }
 
 // =====================
-// LOAD COMMANDS (cmd.json)
+// LOAD COMMANDS
 // =====================
 const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
 const slashCommands = [];
@@ -79,9 +78,10 @@ for (const cmd of rawCmds) {
 // =====================
 async function registerSlashCommands() {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
-  await rest.put(Routes.applicationCommands(CLIENT_ID), {
-    body: slashCommands
-  });
+  await rest.put(
+    Routes.applicationCommands(CLIENT_ID),
+    { body: slashCommands }
+  );
 }
 
 // =====================
@@ -153,50 +153,39 @@ function buscarCanal(guild, palabras) {
 }
 
 // =====================
-// MENSAJES RANDOM
+// BIENVENIDA / DESPEDIDA
 // =====================
 const mensajesBienvenida = [
   m => `🌸 **¡Bienvenido/a ${m}!** Softi te manda un abracito 💖`,
-  m => `✨ ${m} llegó al server ✨ ¡Siéntete como en casa!`,
+  m => `✨ ${m} llegó al server ✨`,
   m => `🦊 Softi dice hola a ${m} 💕`,
-  m => `💫 Nueva personita detectada: ${m}`,
-  m => `🌷 ${m} se unió, la vibe subió`
+  m => `💫 Nueva personita detectada: ${m}`
 ];
 
 const mensajesDespedida = [
-  m => `💔 ${m.user.username} se fue… Softi le desea lo mejor 🌙`,
-  m => `✨ Hasta luego ${m.user.username}, vuelve cuando quieras`,
-  m => `🕊️ ${m.user.username} salió del server`,
-  m => `🌧️ Softi despide a ${m.user.username} con cariño`,
-  m => `💫 ${m.user.username} tomó otro camino`
+  m => `💔 ${m.user.username} se fue…`,
+  m => `✨ Hasta luego ${m.user.username}`,
+  m => `🕊️ ${m.user.username} salió del server`
 ];
 
-// =====================
-// BIENVENIDA
-// =====================
 client.on("guildMemberAdd", member => {
   const canal = buscarCanal(member.guild, [
-    "bienvenido", "bienvenida", "welcome", "hola"
+    "bienvenido","welcome","hola"
   ]);
   if (!canal) return;
-
-  const msg =
-    mensajesBienvenida[Math.floor(Math.random() * mensajesBienvenida.length)];
-  canal.send(msg(member));
+  canal.send(
+    mensajesBienvenida[Math.floor(Math.random()*mensajesBienvenida.length)](member)
+  );
 });
 
-// =====================
-// DESPEDIDA
-// =====================
 client.on("guildMemberRemove", member => {
   const canal = buscarCanal(member.guild, [
-    "adios", "bye", "despedida", "salida"
+    "bye","adios","salida"
   ]);
   if (!canal) return;
-
-  const msg =
-    mensajesDespedida[Math.floor(Math.random() * mensajesDespedida.length)];
-  canal.send(msg(member));
+  canal.send(
+    mensajesDespedida[Math.floor(Math.random()*mensajesDespedida.length)](member)
+  );
 });
 
 // =====================
@@ -233,7 +222,7 @@ async function sendTOS(guild) {
 client.on("guildCreate", sendTOS);
 
 // =====================
-// INTERACTIONS (CMD.JSON FIX)
+// INTERACTIONS
 // =====================
 client.on("interactionCreate", async i => {
   if (i.isButton() && i.customId === "aceptoTOS") {
@@ -247,17 +236,56 @@ client.on("interactionCreate", async i => {
   if (!i.isChatInputCommand()) return;
 
   const cmd = client.commands.get(i.commandName);
-  if (!cmd || !cmd.response) {
+  if (!cmd || !cmd.reply)
     return i.reply({ content: "❌ Comando roto", ephemeral: true });
-  }
 
   const target = i.options.getUser("target");
-  let reply = cmd.response
+  const reply = cmd.reply
     .replace("{user}", i.user.username)
-    .replace("{target}", target ? target.username : "al aire");
+    .replace("{target}", target ? target.username : "");
 
   await i.reply(reply);
 });
+
+// =====================
+// YOUTUBE RSS (SIN API)
+// =====================
+let youtubers = [];
+let lastVideos = {};
+
+try {
+  youtubers = JSON.parse(fs.readFileSync("youtubers.json", "utf8"));
+} catch {
+  youtubers = [];
+}
+
+async function checkYouTubeRSS() {
+  for (const yt of youtubers) {
+    try {
+      const res = await fetch(yt.rss);
+      const text = await res.text();
+
+      const videoId = text.match(/<yt:videoId>(.*?)<\/yt:videoId>/)?.[1];
+      if (!videoId || lastVideos[yt.rss] === videoId) continue;
+
+      lastVideos[yt.rss] = videoId;
+
+      const link = `https://youtu.be/${videoId}`;
+
+      client.guilds.cache.forEach(guild => {
+        const canal = buscarCanal(guild, [
+          "yt","youtube","youtubers"
+        ]);
+        if (!canal) return;
+
+        canal.send(
+          `📺 **${yt.name} subió nuevo video!**\n👉 ${link}`
+        );
+      });
+
+    } catch {}
+  }
+}
 
 // =====================
 // READY
@@ -267,6 +295,7 @@ client.once(Events.ClientReady, async () => {
   await registerSlashCommands();
   rotarEstado();
   setInterval(rotarEstado, 120000);
+  setInterval(checkYouTubeRSS, 300000); // 5 min
 });
 
 // =====================
@@ -283,14 +312,11 @@ client.on("messageCreate", async msg => {
         "https://terminosycondicionesdeserv.jimdofree.com/"
       );
     }
-
-    const ai = await longcatAI(msg.content, msg.author.id);
-    return msg.reply(ai);
+    return msg.reply(await longcatAI(msg.content, msg.author.id));
   }
 
   if (!msg.content.toLowerCase().includes("softi")) return;
-  const ai = await longcatAI(msg.content, msg.author.id);
-  msg.reply(ai);
+  msg.reply(await longcatAI(msg.content, msg.author.id));
 });
 
 // =====================
