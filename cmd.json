@@ -1,60 +1,129 @@
 [
-  { "name": "softihug", "description": "Abraza suavemente a alguien 💖", "response": "{user} abrazó con ternura a {target}~ ¡Qué abrazo tan cálido y suave! 🤗💞" },
-  { "name": "softikiss", "description": "Da un besito kawaii 💋", "response": "{user} le dio un besito suave a {target}~ 💋✨ qué tierno nyan~" },
-  { "name": "softibite", "description": "Da una mordidita suave 🦊", "response": "{user} muerde juguetonamente a {target}~ ¡nyam! 🦊💕" },
-  { "name": "softicuddle", "description": "Acurruca a alguien 🐾", "response": "{user} se acurruca con {target}~ tan calentitos juntos 💞🐱" },
-  { "name": "softipoke", "description": "Hace poke kawaii 👉", "response": "{user} pokea a {target} con su dedito~ 👉 uwu" },
-  { "name": "softiboop", "description": "Boop en la nariz ✨", "response": "{user} le hace boop en la naricita a {target}~ boop~ 🐽💖" },
-  { "name": "softimeow", "description": "Miau kawaii 🐱", "response": "{user} maúlla dulcemente a {target}~ meow~ 🐾" },
-  { "name": "softipurr", "description": "Ronronea junto a alguien 😻", "response": "{user} ronronea suavemente con {target}~ purr~ 💖🐾" },
-  { "name": "softisnuggle", "description": "Acaricia tiernamente 🌸", "response": "{user} acaricia dulcemente a {target}~ tan tiernooo 🌸" },
-  { "name": "softihide", "description": "Se esconde detrás de alguien 🙈", "response": "{user} se esconde tímidamente detrás de {target}~ kya~ 🙈💞" },
-  { "name": "softitickle", "description": "Hace cosquillas 😆", "response": "{user} le hace cosquillas a {target}~ ¡jeje, qué risa! 😆✨" },
-  { "name": "softidance", "description": "Baila junto a alguien 💃", "response": "{user} baila felizmente con {target}~ ✨🎶" },
-  { "name": "softinuzzle", "description": "Frota su carita 🐾", "response": "{user} frota su carita contra {target}~ nyaa~ 💕" },
-  { "name": "softicheer", "description": "Anima a alguien 💪", "response": "{user} anima a {target}~ ¡tú puedes! 💪🌟" },
-  { "name": "softiclap", "description": "Aplaude a alguien 👏", "response": "{user} aplaude a {target}~ ¡bravooo! 👏✨" },
-  { "name": "softibark", "description": "Ladra kawaii 🐶", "response": "{user} ladra felizmente hacia {target}~ woof woof~ 🐶💕" },
-  { "name": "softising", "description": "Canta para alguien 🎤", "response": "{user} canta una canción dulce para {target}~ 🎵💖" },
-  { "name": "softihowl", "description": "Aúlla con alguien 🌕", "response": "{user} aúlla junto a {target} bajo la luna~ awooo~ 🌕🐺" },
-  { "name": "softibless", "description": "Desea bendiciones 💫", "response": "{user} le envía buenas vibras a {target}~ 💫💖" },
-  { "name": "softipray", "description": "Ora por alguien ✨", "response": "{user} ora con ternura por {target}~ ✨🙏" },
-  { "name": "softipet", "description": "Acaricia la cabeza 🐾", "response": "{user} acaricia la cabecita de {target}~ pat pat~ 🐾💞" },
-  { "name": "softisleep", "description": "Se duerme junto a alguien 😴", "response": "{user} se duerme abrazadito a {target}~ zZz... 💕" },
-  { "name": "softicheerup", "description": "Anima a alguien triste 💖", "response": "{user} le da apoyo y ánimos a {target}~ ¡todo estará bien! 💖✨" },
-  { "name": "softijump", "description": "Salta con emoción 🐇", "response": "{user} salta alegremente junto a {target}~ hop hop~ 🐇" },
-  { "name": "softiholdhands", "description": "Toma la mano de alguien 🤝", "response": "{user} toma suavemente la mano de {target}~ 💞🤝" },
-  { "name": "softismile", "description": "Sonríe con ternura 😺", "response": "{user} le dedica una sonrisa dulce a {target}~ 😺💕" },
-  { "name": "softithank", "description": "Agradece a alguien 💐", "response": "{user} agradece con cariño a {target}~ ¡gracias por todo! 💐💖" },
-  { "name": "softigreet", "description": "Saluda a alguien 👋", "response": "{user} saluda con entusiasmo a {target}~ ¡hola hola! 👋😽" },
-  { "name": "softibye", "description": "Se despide tiernamente 👋", "response": "{user} se despide con un abracito de {target}~ 👋💕" },
-  { "name": "softilick", "description": "Lame suavemente 😳", "response": "{user} le da una lamidita a {target}~ *lick* 😳💦" },
-  { "name": "softiglow", "description": "Brilla junto a alguien ✨", "response": "{user} brilla con {target} como dos estrellitas ✨🌸" },
-  { "name": "softigiggle", "description": "Ríe suavemente 😆", "response": "{user} se ríe dulcemente con {target}~ hehe~ 😆💕" },
-  { "name": "softiwave", "description": "Saluda con la patita 🐾", "response": "{user} mueve la patita para saludar a {target}~ 🐾👋" },
-  { "name": "softipanic", "description": "Se asusta 😱", "response": "{user} se asusta y se esconde detrás de {target}~ 😱💞" },
-  { "name": "softicry", "description": "Llora con ternura 😿", "response": "{user} llora suavemente y {target} le consuela~ 😿💖" },
-  { "name": "softicomfort", "description": "Consuela a alguien 💞", "response": "{user} consuela dulcemente a {target}~ todo estará bien 💖🐾" },
-  { "name": "softisniff", "description": "Huele curiosamente 👃", "response": "{user} huele curiosamente a {target}~ sniff sniff~ 😳" },
-  { "name": "softisnack", "description": "Comparte una merienda 🍪", "response": "{user} comparte una galletita con {target}~ 🍪💞" },
-  { "name": "softicheerleader", "description": "Actúa de porrista 💃", "response": "{user} agita pompones para animar a {target}~ ¡vamos vamos! 💃✨" },
-  { "name": "softiblessyou", "description": "Bendice a alguien 🤍", "response": "{user} bendice suavemente a {target}~ 🤍✨" },
-  { "name": "softistare", "description": "Mira fijamente 👀", "response": "{user} mira fijamente a {target}~ 👀💞" },
-  { "name": "softishout", "description": "Grita felizmente 📣", "response": "{user} grita con emoción hacia {target}~ ¡yaaay! 📣💖" },
-  { "name": "softiblush", "description": "Se sonroja 😳", "response": "{user} se sonroja mirando a {target}~ kya~ 😳💞" },
-  { "name": "softifall", "description": "Tropieza 💥", "response": "{user} tropieza y cae frente a {target}~ 💥😅" },
-  { "name": "softisingalong", "description": "Canta junto a alguien 🎶", "response": "{user} canta junto a {target}~ lalala~ 🎶💖" },
-  { "name": "softiwink", "description": "Guiña un ojito 😉", "response": "{user} guiña un ojito a {target}~ 😉💖" },
-  { "name": "softiflirt", "description": "Coquetea suavemente 😏", "response": "{user} coquetea con {target}~ nyan~ 😏💞" },
-  { "name": "softihidebehind", "description": "Se esconde detrás 😳", "response": "{user} se esconde detrás de {target}~ tan tierno 😳💕" },
-  { "name": "softiwatch", "description": "Observa en silencio 👀", "response": "{user} observa silenciosamente a {target}~ 👀✨" },
-  { "name": "softiheart", "description": "Envía corazones 💕", "response": "{user} le lanza corazoncitos a {target}~ 💕💕💕" },
-  { "name": "softiprayfor", "description": "Ora por alguien 🙏", "response": "{user} ora con cariño por {target}~ 🙏💖" },
-  { "name": "softiblesslight", "description": "Comparte luz 🌟", "response": "{user} comparte su luz interior con {target}~ 🌟💞" },
-  { "name": "softihold", "description": "Abraza y no suelta 🤗", "response": "{user} abraza fuerte a {target} y no lo suelta~ 🤗💕" },
-  { "name": "softisleepy", "description": "Tiene sueño 😴", "response": "{user} se queda dormido sobre {target}~ 😴💞" },
-  { "name": "softipromise", "description": "Promete algo 💍", "response": "{user} hace una promesa con {target}~ 💍💖" },
-  { "name": "softicheerwave", "description": "Anima con energía ✨", "response": "{user} agita las manos para animar a {target}~ ✨🙌" },
-  { "name": "softisupport", "description": "Apoya a alguien 💪", "response": "{user} apoya con todo su corazón a {target}~ 💪💖" },
-  { "name": "softichase", "description": "Persigue juguetonamente 🏃", "response": "{user} persigue a {target} riendo~ 🏃💕" }
+  {
+    "name": "softihug",
+    "description": "Abraza suavemente a alguien 💖",
+    "options": [
+      { "type": 6, "name": "target", "description": "Usuario a abrazar", "required": true }
+    ],
+    "reply": "{user} abrazó con ternura a {target}~ 🤗💞"
+  },
+  {
+    "name": "softikiss",
+    "description": "Da un besito kawaii 💋",
+    "options": [
+      { "type": 6, "name": "target", "description": "Usuario a besar", "required": true }
+    ],
+    "reply": "{user} le dio un besito suave a {target}~ 💋✨"
+  },
+  {
+    "name": "softibite",
+    "description": "Mordidita juguetona 🦊",
+    "options": [
+      { "type": 6, "name": "target", "description": "Usuario a morder", "required": true }
+    ],
+    "reply": "{user} muerde juguetonamente a {target}~ ¡nyam! 🦊💕"
+  },
+  {
+    "name": "softicuddle",
+    "description": "Acurrucarse con alguien 🐾",
+    "options": [
+      { "type": 6, "name": "target", "description": "Usuario a acurrucar", "required": true }
+    ],
+    "reply": "{user} se acurruca con {target}~ 💞🐱"
+  },
+  {
+    "name": "softipoke",
+    "description": "Poke kawaii 👉",
+    "options": [
+      { "type": 6, "name": "target", "description": "Usuario a picar", "required": true }
+    ],
+    "reply": "{user} pokea a {target} con su dedito~ 👉 uwu"
+  },
+  {
+    "name": "softiboop",
+    "description": "Boop en la naricita 🐽",
+    "options": [
+      { "type": 6, "name": "target", "description": "Usuario a boopear", "required": true }
+    ],
+    "reply": "{user} le hace boop en la nariz a {target}~ 🐽💖"
+  },
+  {
+    "name": "softimeow",
+    "description": "Miau kawaii 🐱",
+    "options": [
+      { "type": 6, "name": "target", "description": "A quién maullar", "required": true }
+    ],
+    "reply": "{user} maúlla dulcemente a {target}~ meow~ 🐾"
+  },
+  {
+    "name": "softipurr",
+    "description": "Ronronea suavemente 😻",
+    "options": [
+      { "type": 6, "name": "target", "description": "Con quién ronronear", "required": true }
+    ],
+    "reply": "{user} ronronea junto a {target}~ purr~ 💖"
+  },
+  {
+    "name": "softitickle",
+    "description": "Hace cosquillas 😆",
+    "options": [
+      { "type": 6, "name": "target", "description": "Usuario objetivo", "required": true }
+    ],
+    "reply": "{user} le hace cosquillas a {target}~ 😆✨"
+  },
+  {
+    "name": "softidance",
+    "description": "Baila con alguien 💃",
+    "options": [
+      { "type": 6, "name": "target", "description": "Pareja de baile", "required": true }
+    ],
+    "reply": "{user} baila felizmente con {target}~ 💃🎶"
+  },
+  {
+    "name": "softicheer",
+    "description": "Anima a alguien 💪",
+    "options": [
+      { "type": 6, "name": "target", "description": "Usuario a animar", "required": true }
+    ],
+    "reply": "{user} anima a {target}~ ¡tú puedes! 💪🌟"
+  },
+  {
+    "name": "softipet",
+    "description": "Pat pat 🐾",
+    "options": [
+      { "type": 6, "name": "target", "description": "Usuario a acariciar", "required": true }
+    ],
+    "reply": "{user} acaricia la cabecita de {target}~ pat pat~ 🐾💞"
+  },
+  {
+    "name": "softiblush",
+    "description": "Se sonroja 😳",
+    "options": [
+      { "type": 6, "name": "target", "description": "Por quién se sonroja", "required": true }
+    ],
+    "reply": "{user} se sonroja mirando a {target}~ kya~ 😳💞"
+  },
+  {
+    "name": "softilove",
+    "description": "Declara amor 💗",
+    "options": [
+      { "type": 6, "name": "target", "description": "Usuario amado", "required": true }
+    ],
+    "reply": "{user} le declara su amor a {target}~ 💗🌸"
+  },
+  {
+    "name": "softihi",
+    "description": "Saludo kawaii 👋",
+    "reply": "✨ Hola {user}~ Softi te saluda con cariño 💖"
+  },
+  {
+    "name": "softibye",
+    "description": "Despedida tierna 👋",
+    "reply": "🌙 {user} se despide suavemente~ Cuídate 💕"
+  },
+  {
+    "name": "softitos",
+    "description": "Ver los Términos de Servicio 📜",
+    "reply": "📜 Puedes leer mis TOS aquí:\nhttps://terminosycondicionesdeserv.jimdofree.com/"
+  }
 ]
