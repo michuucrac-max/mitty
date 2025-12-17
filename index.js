@@ -12,7 +12,8 @@ import {
   Events,
   ButtonBuilder,
   ButtonStyle,
-  ActionRowBuilder
+  ActionRowBuilder,
+  PermissionsBitField
 } from "discord.js";
 
 import fs from "fs";
@@ -42,15 +43,39 @@ const client = new Client({
 
 client.commands = new Collection();
 const memory = new Map();
-const tosUsuarios = new Set(); // usuarios que aceptaron TOS
+const tosUsuarios = new Set();
 
 // =====================
-// LOAD FILES
+// FILES
 // =====================
 const tosServers = fs.existsSync("tos.json")
   ? JSON.parse(fs.readFileSync("tos.json", "utf8"))
   : [];
 
+const welcomeData = fs.existsSync("welcome.json")
+  ? JSON.parse(fs.readFileSync("welcome.json", "utf8"))
+  : {};
+
+const ytData = fs.existsSync("yt.json")
+  ? JSON.parse(fs.readFileSync("yt.json", "utf8"))
+  : {};
+
+// =====================
+// SAVE UTILS
+// =====================
+const saveJSON = (file, data) =>
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+
+const aceptarTOSServidor = guildId => {
+  if (!tosServers.includes(guildId)) {
+    tosServers.push(guildId);
+    saveJSON("tos.json", tosServers);
+  }
+};
+
+// =====================
+// LOAD CMDS
+// =====================
 const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
 const slashCommands = [];
 
@@ -68,10 +93,9 @@ for (const cmd of rawCmds) {
 // =====================
 async function registerSlashCommands() {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
-  await rest.put(
-    Routes.applicationCommands(CLIENT_ID),
-    { body: slashCommands }
-  );
+  await rest.put(Routes.applicationCommands(CLIENT_ID), {
+    body: slashCommands
+  });
   console.log("✅ Slash commands registrados");
 }
 
@@ -82,23 +106,20 @@ async function longcatAI(message, userId) {
   const history = memory.get(userId) ?? [];
   history.push({ role: "user", content: message });
 
-  const res = await fetch(
-    "https://api.longcat.chat/openai/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LONGCAT_API}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "LongCat-Flash-Chat",
-        messages: [
-          { role: "system", content: "Eres Softi, kawaii y amable." },
-          ...history
-        ]
-      })
-    }
-  );
+  const res = await fetch("https://api.longcat.chat/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${LONGCAT_API}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "LongCat-Flash-Chat",
+      messages: [
+        { role: "system", content: "Eres Softi, kawaii y amable." },
+        ...history
+      ]
+    })
+  });
 
   const data = await res.json();
   const reply = data?.choices?.[0]?.message?.content ?? "💖";
@@ -109,127 +130,126 @@ async function longcatAI(message, userId) {
 }
 
 // =====================
-// UTIL CANAL
-// =====================
-function limpiarNombre(nombre) {
-  return nombre.toLowerCase().replace(/[^a-z0-9\s-]/g, "");
-}
-
-function buscarCanal(guild, palabras) {
-  return guild.channels.cache.find(c => {
-    if (!c.isTextBased()) return false;
-    const limpio = limpiarNombre(c.name);
-    return palabras.some(p => limpio.includes(p));
-  });
-}
-
-// =====================
 // BIENVENIDA / DESPEDIDA
 // =====================
-const bienvenida = [
-  m => `🌸 Bienvenido/a ${m} 💖`,
-  m => `✨ ${m} llegó al server ✨`
-];
-
-const despedida = [
-  m => `💔 ${m} se fue…`,
-  m => `🕊️ Hasta luego ${m}`
-];
-
 client.on(Events.GuildMemberAdd, member => {
-  const canal = buscarCanal(member.guild, ["bienvenido", "welcome"]);
-  if (!canal) return;
-  const msg = bienvenida[Math.floor(Math.random() * bienvenida.length)];
-  canal.send(msg(member.user));
+  const cfg = welcomeData[member.guild.id];
+  if (!cfg?.welcome) return;
+  member.guild.channels.cache.get(cfg.welcome)?.send(
+    `🌸 Bienvenido/a ${member.user} 💖`
+  );
 });
 
 client.on(Events.GuildMemberRemove, member => {
-  const canal = buscarCanal(member.guild, ["bye", "salida"]);
-  if (!canal) return;
-  const msg = despedida[Math.floor(Math.random() * despedida.length)];
-  canal.send(msg(member.user));
+  const cfg = welcomeData[member.guild.id];
+  if (!cfg?.bye) return;
+  member.guild.channels.cache.get(cfg.bye)?.send(
+    `🕊️ Hasta luego ${member.user} 💞`
+  );
 });
 
 // =====================
 // SLASH HANDLER
 // =====================
 client.on(Events.InteractionCreate, async interaction => {
+  // ---------- BOTONES TOS ----------
+  if (interaction.isButton()) {
+    if (interaction.customId === "aceptar_tos_server") {
+      aceptarTOSServidor(interaction.guildId);
+      return interaction.update({
+        content: "✅ TOS aceptado, Softi está activa 💖",
+        components: []
+      });
+    }
+  }
+
+  // ---------- SLASH ----------
   if (!interaction.isChatInputCommand()) return;
 
-  const userId = interaction.user.id;
+  const guildId = interaction.guildId;
 
-  // Check TOS: si es en servidor, se revisa tosServers, si es DM solo tosUsuarios
-  if (interaction.guildId) {
-    if (!tosServers.includes(interaction.guildId)) {
-      return interaction.reply({
-        content: "📜 Debes aceptar el TOS del servidor primero",
-        ephemeral: true
-      });
-    }
-  } else {
-    if (!tosUsuarios.has(userId)) {
-      return interaction.reply({
-        content: "📜 Debes aceptar mis TOS primero (DM)",
-        ephemeral: true
-      });
-    }
+  if (guildId && !tosServers.includes(guildId)) {
+    return interaction.reply({
+      content: "🔒 Softi está bloqueada.\nAcepten los TOS 📜",
+      ephemeral: true
+    });
   }
 
   const cmd = client.commands.get(interaction.commandName);
   if (!cmd) return;
 
-  try {
-    await interaction.reply(cmd.response ?? "✨");
-  } catch (e) {
-    console.error(e);
-    interaction.reply("❌ Error");
+  // SOFTI SETWELCOME
+  if (interaction.commandName === "softi" &&
+      interaction.options.getSubcommand() === "setwelcome") {
+
+    if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator))
+      return interaction.reply({ content: "❌ Solo admins", ephemeral: true });
+
+    const welcome = interaction.options.getChannel("welcome");
+    const bye = interaction.options.getChannel("bye");
+
+    welcomeData[guildId] = {
+      welcome: welcome?.id,
+      bye: bye?.id
+    };
+
+    saveJSON("welcome.json", welcomeData);
+
+    return interaction.reply("✅ Bienvenidas configuradas 💖");
   }
+
+  // SOFTI ADD YT
+  if (interaction.commandName === "softiaddyt") {
+    const canal = interaction.channel.id;
+    ytData[guildId] ??= [];
+    ytData[guildId].push(canal);
+    saveJSON("yt.json", ytData);
+
+    return interaction.reply("📺 Canal agregado para YouTubers 💖");
+  }
+
+  // KAWAII CMDS
+  let reply = cmd.reply ?? "✨";
+  reply = reply.replaceAll("{user}", `<@${interaction.user.id}>`);
+
+  if (cmd.options?.length) {
+    const target = interaction.options.getUser("target");
+    if (target)
+      reply = reply.replaceAll("{target}", `<@${target.id}>`);
+  }
+
+  interaction.reply(reply);
 });
 
 // =====================
-// MENSAJES IA CON TOS Y LINK
+// MENSAJES + TOS SERVER
 // =====================
 client.on(Events.MessageCreate, async msg => {
-  if (msg.author.bot) return;
+  if (msg.author.bot || !msg.guild) return;
 
-  const userId = msg.author.id;
-  const esDM = msg.channel.type === 1 || msg.channel.type === 3; // DM
+  const contieneSofti =
+    msg.content.toLowerCase().includes("softi") ||
+    msg.mentions.has(client.user);
 
-  // En DM siempre responde, en servidor solo si menciona o dice Softi
-  const contieneSofti = msg.content.toLowerCase().includes("softi");
-  if (!esDM && !msg.mentions.has(client.user) && !contieneSofti) return;
+  if (!contieneSofti) return;
 
-  // Si no aceptó TOS
-  if (!tosUsuarios.has(userId)) {
+  if (!tosServers.includes(msg.guild.id)) {
     const boton = new ButtonBuilder()
-      .setCustomId("aceptar_tos")
-      .setLabel("Aceptar TOS")
+      .setCustomId("aceptar_tos_server")
+      .setLabel("Aceptar TOS del servidor")
       .setStyle(ButtonStyle.Success);
 
-    const fila = new ActionRowBuilder().addComponents(boton);
+    const row = new ActionRowBuilder().addComponents(boton);
 
-    const tosMsg = await msg.reply({
-      content: "📜 Antes de hablar conmigo, debes aceptar mis TOS:\n<https://terminosycondicionesdeserv.jimdofree.com/>\n\nHaz click en el botón para aceptar.",
-      components: [fila]
+    return msg.reply({
+      content:
+        "📜 Este servidor debe aceptar los TOS para usar a Softi\n" +
+        "<https://terminosycondicionesdeserv.jimdofree.com/>",
+      components: [row]
     });
-
-    const collector = tosMsg.createMessageComponentCollector({
-      filter: i => i.user.id === userId,
-      time: 60000
-    });
-
-    collector.on("collect", async i => {
-      if (i.customId === "aceptar_tos") {
-        tosUsuarios.add(userId);
-        await i.update({ content: "✅ Gracias! Ahora puedes hablar conmigo 💖", components: [] });
-      }
-    });
-
-    return;
   }
 
-  // ya aceptó TOS, respondemos con IA
-  const reply = await longcatAI(msg.content, userId);
+  const reply = await longcatAI(msg.content, msg.author.id);
   msg.reply(reply);
 });
 
