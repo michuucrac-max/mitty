@@ -153,34 +153,52 @@ function buscarCanal(guild, palabras) {
 }
 
 // =====================
-// BIENVENIDA CUTE
+// MENSAJES RANDOM
+// =====================
+const mensajesBienvenida = [
+  m => `🌸 **¡Bienvenido/a ${m}!** Softi te manda un abracito 💖`,
+  m => `✨ ${m} llegó al server ✨ ¡Siéntete como en casa!`,
+  m => `🦊 Softi dice hola a ${m} 💕`,
+  m => `💫 Nueva personita detectada: ${m}`,
+  m => `🌷 ${m} se unió, la vibe subió`
+];
+
+const mensajesDespedida = [
+  m => `💔 ${m.user.username} se fue… Softi le desea lo mejor 🌙`,
+  m => `✨ Hasta luego ${m.user.username}, vuelve cuando quieras`,
+  m => `🕊️ ${m.user.username} salió del server`,
+  m => `🌧️ Softi despide a ${m.user.username} con cariño`,
+  m => `💫 ${m.user.username} tomó otro camino`
+];
+
+// =====================
+// BIENVENIDA
 // =====================
 client.on("guildMemberAdd", member => {
   const canal = buscarCanal(member.guild, [
-    "welcome", "bienvenido", "hola"
+    "bienvenido", "bienvenida", "bienvenidos", "welcome", "hola", "saludos"
   ]);
   if (!canal) return;
 
-  canal.send(
-    `🌸 **¡Bienvenido/a ${member}!** 🌸\n` +
-    `Siéntete como en casa ✨\n` +
-    `Softi te manda un abracito virtual 💖`
-  );
+  const msg =
+    mensajesBienvenida[Math.floor(Math.random() * mensajesBienvenida.length)];
+
+  canal.send(msg(member));
 });
 
 // =====================
-// DESPEDIDA CUTE
+// DESPEDIDA
 // =====================
 client.on("guildMemberRemove", member => {
   const canal = buscarCanal(member.guild, [
-    "bye", "adios", "salida"
+    "adios", "adiós", "bye", "despedida", "despedidas", "salida", "hasta-luego"
   ]);
   if (!canal) return;
 
-  canal.send(
-    `💔 **${member.user.username} se fue...**\n` +
-    `Softi le desea lo mejor 🌙✨`
-  );
+  const msg =
+    mensajesDespedida[Math.floor(Math.random() * mensajesDespedida.length)];
+
+  canal.send(msg(member));
 });
 
 // =====================
@@ -242,53 +260,6 @@ client.on("interactionCreate", async i => {
 });
 
 // =====================
-// YOUTUBE RSS (SIN API)
-// =====================
-const YT_CHANNELS = [
-  ["MrBeast", "UCX6OQ3DkcsbYNE6H8uQQuVA"],
-  ["PewDiePie", "UC-lHJZR3Gqxm24_Vd_AJ5Yw"],
-  ["Pato Prensado", "UCn5vK9J6nHTKf2kKZ5qVnBQ"],
-  ["Plechito", "UCzKq5Zqk7A2nB0JQ2GQy2Zw"],
-  ["SB737", "UCp68_FLety0O-n9QU6phsgw"],
-  ["Ibai", "UCaY_-ksFSQtTGk0y1HA_3YQ"],
-  ["AuronPlay", "UCyQqzYXQBUWgBTn4pw_fFSQ"]
-  // Puedes añadir hasta 30 sin problema
-];
-
-let ytMemory = {};
-
-async function revisarYT() {
-  for (const [name, id] of YT_CHANNELS) {
-    try {
-      const xml = await fetch(
-        `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`
-      ).then(r => r.text());
-
-      const videoId = xml.match(/<yt:videoId>(.*?)<\/yt:videoId>/)?.[1];
-      if (!videoId || ytMemory[id] === videoId) continue;
-
-      ytMemory[id] = videoId;
-
-      const title = xml.match(/<title>(.*?)<\/title>/)?.[1];
-      const link = `https://www.youtube.com/watch?v=${videoId}`;
-
-      for (const guild of client.guilds.cache.values()) {
-        const canal = buscarCanal(guild, [
-          "youtube", "yt", "youtubers", "videos"
-        ]);
-        if (!canal) continue;
-
-        canal.send(
-          `📺 **Nuevo video de ${name}**\n` +
-          `🎬 ${title}\n` +
-          `${link}`
-        );
-      }
-    } catch {}
-  }
-}
-
-// =====================
 // READY
 // =====================
 client.once(Events.ClientReady, async () => {
@@ -296,7 +267,6 @@ client.once(Events.ClientReady, async () => {
   await registerSlashCommands();
   rotarEstado();
   setInterval(rotarEstado, 120000);
-  setInterval(revisarYT, 300000);
 });
 
 // =====================
@@ -305,7 +275,6 @@ client.once(Events.ClientReady, async () => {
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
 
-  // LOG
   try {
     const log = await client.channels.fetch(LOG_CHANNEL);
     if (log) {
