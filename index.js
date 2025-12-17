@@ -156,7 +156,7 @@ function buscarCanal(guild, palabras) {
 // BIENVENIDA / DESPEDIDA
 // =====================
 const mensajesBienvenida = [
-  m => `🌸 **¡Bienvenido/a ${m}!** Softi te manda un abracito 💖`,
+  m => `🌸 ¡Bienvenido/a ${m}! Softi te manda un abracito 💖`,
   m => `✨ ${m} llegó al server ✨`,
   m => `🦊 Softi dice hola a ${m} 💕`,
   m => `💫 Nueva personita detectada: ${m}`
@@ -173,12 +173,11 @@ client.on("guildMemberAdd", member => {
     "bienvenido", "welcome", "hola"
   ]);
   if (!canal) return;
-
-  const msg = mensajesBienvenida[
-    Math.floor(Math.random() * mensajesBienvenida.length)
-  ](member.user.username);
-
-  canal.send(msg);
+  canal.send(
+    mensajesBienvenida[Math.floor(Math.random() * mensajesBienvenida.length)](
+      member.user.username
+    )
+  );
 });
 
 client.on("guildMemberRemove", member => {
@@ -186,12 +185,11 @@ client.on("guildMemberRemove", member => {
     "bye", "adios", "salida"
   ]);
   if (!canal) return;
-
-  const msg = mensajesDespedida[
-    Math.floor(Math.random() * mensajesDespedida.length)
-  ](member);
-
-  canal.send(msg);
+  canal.send(
+    mensajesDespedida[Math.floor(Math.random() * mensajesDespedida.length)](
+      member
+    )
+  );
 });
 
 // =====================
@@ -275,6 +273,7 @@ async function checkYouTubeRSS() {
       if (!videoId || lastVideos[yt.rss] === videoId) continue;
 
       lastVideos[yt.rss] = videoId;
+
       const link = `https://youtu.be/${videoId}`;
 
       client.guilds.cache.forEach(guild => {
