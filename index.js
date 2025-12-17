@@ -9,8 +9,7 @@ import {
   Collection,
   REST,
   Routes,
-  Events,
-  SlashCommandBuilder
+  Events
 } from "discord.js";
 
 import fs from "fs";
@@ -32,186 +31,181 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessages
   ],
   partials: [Partials.Channel]
 });
 
 client.commands = new Collection();
+const memory = new Map();
 
 // =====================
-// LOG HELPER
+// LOAD FILES
 // =====================
-function log(...args) {
-  console.log("🦊 [SOFTI]", ...args);
+const tosServers = fs.existsSync("tos.json")
+  ? JSON.parse(fs.readFileSync("tos.json", "utf8"))
+  : [];
+
+const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
+const slashCommands = [];
+
+for (const cmd of rawCmds) {
+  slashCommands.push({
+    name: cmd.name,
+    description: cmd.description,
+    options: cmd.options ?? []
+  });
+  client.commands.set(cmd.name, cmd);
 }
-
-// =====================
-// LOAD WELCOME CHANNELS
-// =====================
-let welcomeData = {};
-try {
-  welcomeData = JSON.parse(fs.readFileSync("welcome.json", "utf8"));
-  log("welcome.json cargado");
-} catch {
-  log("welcome.json no existe, creando uno nuevo");
-  fs.writeFileSync("welcome.json", "{}");
-  welcomeData = {};
-}
-
-// =====================
-// SLASH COMMANDS
-// =====================
-const slashCommands = [
-  new SlashCommandBuilder()
-    .setName("setwelcome")
-    .setDescription("Configura el canal de bienvenida")
-    .addChannelOption(opt =>
-      opt
-        .setName("canal")
-        .setDescription("Canal de bienvenida")
-        .setRequired(true)
-    ),
-
-  new SlashCommandBuilder()
-    .setName("ping")
-    .setDescription("Ping de Softi 💖")
-].map(cmd => cmd.toJSON());
 
 // =====================
 // REGISTER SLASH
 // =====================
 async function registerSlashCommands() {
-  try {
-    log("Registrando slash commands...");
-    const rest = new REST({ version: "10" }).setToken(TOKEN);
-    await rest.put(
-      Routes.applicationCommands(CLIENT_ID),
-      { body: slashCommands }
-    );
-    log("Slash commands registrados correctamente");
-  } catch (err) {
-    console.error("❌ Error registrando slash:", err);
-  }
+  const rest = new REST({ version: "10" }).setToken(TOKEN);
+  await rest.put(
+    Routes.applicationCommands(CLIENT_ID),
+    { body: slashCommands }
+  );
+  console.log("✅ Slash commands registrados");
 }
+
+// =====================
+// LONGCAT AI
+// =====================
+async function longcatAI(message, userId) {
+  console.log("🤖 IA llamada");
+
+  const history = memory.get(userId) ?? [];
+  history.push({ role: "user", content: message });
+
+  const res = await fetch(
+    "https://api.longcat.chat/openai/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LONGCAT_API}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "LongCat-Flash-Chat",
+        messages: [
+          { role: "system", content: "Eres Softi, kawaii y amable." },
+          ...history
+        ]
+      })
+    }
+  );
+
+  const data = await res.json();
+  const reply = data?.choices?.[0]?.message?.content ?? "💖";
+
+  history.push({ role: "assistant", content: reply });
+  memory.set(userId, history.slice(-10));
+  return reply;
+}
+
+// =====================
+// UTIL CANAL
+// =====================
+function limpiarNombre(nombre) {
+  return nombre.toLowerCase().replace(/[^a-z0-9\s-]/g, "");
+}
+
+function buscarCanal(guild, palabras) {
+  return guild.channels.cache.find(c => {
+    if (!c.isTextBased()) return false;
+    const limpio = limpiarNombre(c.name);
+    return palabras.some(p => limpio.includes(p));
+  });
+}
+
+// =====================
+// BIENVENIDA / DESPEDIDA
+// =====================
+const bienvenida = [
+  m => `🌸 Bienvenido/a ${m} 💖`,
+  m => `✨ ${m} llegó al server ✨`
+];
+
+const despedida = [
+  m => `💔 ${m} se fue…`,
+  m => `🕊️ Hasta luego ${m}`
+];
+
+client.on(Events.GuildMemberAdd, member => {
+  console.log("➕ Nuevo miembro");
+  const canal = buscarCanal(member.guild, ["bienvenido", "welcome"]);
+  if (!canal) return;
+
+  const msg = bienvenida[Math.floor(Math.random() * bienvenida.length)];
+  canal.send(msg(member.user));
+});
+
+client.on(Events.GuildMemberRemove, member => {
+  console.log("➖ Miembro salió");
+  const canal = buscarCanal(member.guild, ["bye", "salida"]);
+  if (!canal) return;
+
+  const msg = despedida[Math.floor(Math.random() * despedida.length)];
+  canal.send(msg(member.user));
+});
+
+// =====================
+// SLASH HANDLER (CLAVE)
+// =====================
+client.on(Events.InteractionCreate, async interaction => {
+  if (!interaction.isChatInputCommand()) return;
+
+  console.log("⚡ Slash usado:", interaction.commandName);
+
+  // TOS check
+  if (!tosServers.includes(interaction.guildId)) {
+    return interaction.reply({
+      content: "📜 Debes aceptar el TOS primero",
+      ephemeral: true
+    });
+  }
+
+  const cmd = client.commands.get(interaction.commandName);
+  if (!cmd) return;
+
+  try {
+    await interaction.reply(cmd.response ?? "✨");
+  } catch (e) {
+    console.error(e);
+    interaction.reply("❌ Error");
+  }
+});
+
+// =====================
+// MENSAJES IA
+// =====================
+client.on(Events.MessageCreate, async msg => {
+  if (msg.author.bot) return;
+  if (!msg.mentions.has(client.user)) return;
+
+  console.log("💬 IA mencionada");
+
+  const reply = await longcatAI(msg.content, msg.author.id);
+  msg.reply(reply);
+});
 
 // =====================
 // READY
 // =====================
 client.once(Events.ClientReady, async () => {
-  log(`Softi lista como ${client.user.tag}`);
+  console.log(`🦊 Softi lista como ${client.user.tag}`);
   await registerSlashCommands();
 });
 
 // =====================
-// INTERACTIONS
+// 24/7
 // =====================
-client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-
-  log("Comando usado:", interaction.commandName);
-
-  if (interaction.commandName === "ping") {
-    return interaction.reply("🏓 Pong 💖");
-  }
-
-  if (interaction.commandName === "setwelcome") {
-    const canal = interaction.options.getChannel("canal");
-
-    welcomeData[interaction.guild.id] = canal.id;
-    fs.writeFileSync(
-      "welcome.json",
-      JSON.stringify(welcomeData, null, 2)
-    );
-
-    log(
-      `Canal de bienvenida configurado en ${interaction.guild.name}:`,
-      canal.name
-    );
-
-    return interaction.reply({
-      content: `✅ Canal de bienvenida configurado: ${canal}`,
-      ephemeral: true
-    });
-  }
-});
-
-// =====================
-// MENSAJES
-// =====================
-const mensajesBienvenida = [
-  m => `🌸 ¡Bienvenido/a ${m}! Softi te abraza 💖`,
-  m => `✨ ${m} acaba de llegar ✨`,
-  m => `🦊 Softi dice hola a ${m}`,
-  m => `💫 Nueva personita: ${m}`
-];
-
-const mensajesDespedida = [
-  m => `💔 ${m.user.username} se fue…`,
-  m => `🕊️ Hasta luego ${m.user.username}`,
-  m => `✨ ${m.user.username} salió del server`
-];
-
-// =====================
-// GUILD MEMBER ADD
-// =====================
-client.on("guildMemberAdd", member => {
-  log("guildMemberAdd:", member.user.username);
-
-  const canalId = welcomeData[member.guild.id];
-  if (!canalId) {
-    log("No hay canal de bienvenida configurado");
-    return;
-  }
-
-  const canal = member.guild.channels.cache.get(canalId);
-  if (!canal) {
-    log("Canal guardado no existe");
-    return;
-  }
-
-  const msg =
-    mensajesBienvenida[Math.floor(Math.random() * mensajesBienvenida.length)];
-
-  canal.send(msg(member.user.username))
-    .then(() => log("Mensaje de bienvenida enviado"))
-    .catch(err => console.error("❌ Error enviando bienvenida:", err));
-});
-
-// =====================
-// GUILD MEMBER REMOVE
-// =====================
-client.on("guildMemberRemove", member => {
-  log("guildMemberRemove:", member.user.username);
-
-  const canalId = welcomeData[member.guild.id];
-  if (!canalId) return;
-
-  const canal = member.guild.channels.cache.get(canalId);
-  if (!canal) return;
-
-  const msg =
-    mensajesDespedida[Math.floor(Math.random() * mensajesDespedida.length)];
-
-  canal.send(msg(member))
-    .then(() => log("Mensaje de despedida enviado"))
-    .catch(err => console.error("❌ Error enviando despedida:", err));
-});
-
-// =====================
-// 24/7 SERVER
-// =====================
-const PORT = process.env.PORT || 3000;
 http.createServer((_, res) => {
   res.writeHead(200);
-  res.end("Softi activa 💖");
-}).listen(PORT, () => {
-  log("Servidor HTTP activo en puerto", PORT);
-});
+  res.end("Softi viva 💖");
+}).listen(process.env.PORT || 3000);
 
-// =====================
-// LOGIN
-// =====================
-client.login(TOKEN)
-  .then(() => log("Login correcto"))
-  .catch(err => console.error("❌ Error login:", err));
+client.login(TOKEN);
