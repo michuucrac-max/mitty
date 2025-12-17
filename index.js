@@ -12,7 +12,8 @@ import {
   Events,
   ButtonBuilder,
   ButtonStyle,
-  ActionRowBuilder
+  ActionRowBuilder,
+  PermissionsBitField
 } from "discord.js";
 
 import fs from "fs";
@@ -50,6 +51,10 @@ const tosUsersDM = new Set();
 const tosServers = fs.existsSync("tos.json")
   ? JSON.parse(fs.readFileSync("tos.json", "utf8"))
   : [];
+
+const welcomeData = fs.existsSync("welcome.json")
+  ? JSON.parse(fs.readFileSync("welcome.json", "utf8"))
+  : {};
 
 // =====================
 // UTILS
@@ -137,7 +142,7 @@ async function longcatAI(message, userId) {
 // INTERACTIONS
 // =====================
 client.on(Events.InteractionCreate, async interaction => {
-  // BOTONES TOS
+  // ----- BOTONES TOS -----
   if (interaction.isButton()) {
     if (interaction.customId === "aceptar_tos_server") {
       aceptarTOSServidor(interaction.guildId);
@@ -160,6 +165,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
   const guildId = interaction.guildId;
 
+  // 🔒 BLOQUEO POR TOS
   if (guildId && !tosServers.includes(guildId)) {
     return interaction.reply({
       content: tosMessage(),
@@ -167,11 +173,54 @@ client.on(Events.InteractionCreate, async interaction => {
     });
   }
 
+  // 🌸 /softisetwelcome
+  if (interaction.commandName === "softisetwelcome") {
+    if (
+      !interaction.member.permissions.has(
+        PermissionsBitField.Flags.Administrator
+      )
+    ) {
+      return interaction.reply({
+        content: "❌ Solo administradores pueden usar este comando",
+        ephemeral: true
+      });
+    }
+
+    const welcome = interaction.options.getChannel("welcome");
+    const bye = interaction.options.getChannel("bye");
+
+    if (!welcome || !bye) {
+      return interaction.reply({
+        content:
+          "❌ Debes seleccionar **un canal de bienvenida** y **uno de despedida**",
+        ephemeral: true
+      });
+    }
+
+    welcomeData[guildId] = {
+      welcome: welcome.id,
+      bye: bye.id
+    };
+
+    saveJSON("welcome.json", welcomeData);
+
+    return interaction.reply(
+      "🌸 **Bienvenidas y despedidas configuradas correctamente** 💖"
+    );
+  }
+
+  // 💖 COMANDOS KAWAII
   const cmd = client.commands.get(interaction.commandName);
   if (!cmd) return;
 
   let reply =
     cmd.reply?.replaceAll("{user}", `<@${interaction.user.id}>`) ?? "✨";
+
+  if (cmd.options?.length) {
+    const target = interaction.options.getUser("target");
+    if (target)
+      reply = reply.replaceAll("{target}", `<@${target.id}>`);
+  }
 
   interaction.reply({
     content: reply,
@@ -203,7 +252,7 @@ client.on(Events.MessageCreate, async msg => {
     return msg.reply(`💬 **Softi dice:**\n\n${reply}`);
   }
 
-  // ===== SERVIDOR =====
+  // ===== SERVIDORES SIN TOS =====
   if (!tosServers.includes(msg.guild.id)) {
     const boton = new ButtonBuilder()
       .setCustomId("aceptar_tos_server")
@@ -219,10 +268,32 @@ client.on(Events.MessageCreate, async msg => {
   if (msg.content.startsWith("/") || msg.content.startsWith("!")) return;
 
   const reply = await longcatAI(msg.content, msg.author.id);
-  msg.reply({
-    content: `💬 **Softi dice:**\n\n${reply}`,
-    allowedMentions: { repliedUser: false }
-  });
+  msg.reply(`💬 **Softi dice:**\n\n${reply}`);
+});
+
+// =====================
+// BIENVENIDA / DESPEDIDA
+// =====================
+client.on(Events.GuildMemberAdd, member => {
+  const cfg = welcomeData[member.guild.id];
+  if (!cfg?.welcome) return;
+
+  member.guild.channels.cache.get(cfg.welcome)?.send(
+    `🌸 **Hola ${member.user}!** 💖\n\n` +
+      `Bienvenido a **${member.guild.name}** ✨\n` +
+      `No olvides leer las reglas jiji~ 📜\n\n` +
+      `Recuerda que puedes hablar conmigo si gustas 🦊💬`
+  );
+});
+
+client.on(Events.GuildMemberRemove, member => {
+  const cfg = welcomeData[member.guild.id];
+  if (!cfg?.bye) return;
+
+  member.guild.channels.cache.get(cfg.bye)?.send(
+    `🕊️ **${member.user.username}** se ha despedido de **${member.guild.name}**~ 💞\n` +
+      `Softi le desea lo mejor ✨`
+  );
 });
 
 // =====================
