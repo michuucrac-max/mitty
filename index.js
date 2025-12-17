@@ -13,7 +13,8 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ActionRowBuilder,
-  PermissionsBitField
+  PermissionsBitField,
+  EmbedBuilder
 } from "discord.js";
 
 import fs from "fs";
@@ -43,7 +44,6 @@ const client = new Client({
 
 client.commands = new Collection();
 const memory = new Map();
-const tosUsuarios = new Set(); // reservado
 
 // =====================
 // FILES
@@ -61,7 +61,7 @@ const ytData = fs.existsSync("yt.json")
   : {};
 
 // =====================
-// SAVE UTILS
+// UTILS
 // =====================
 const saveJSON = (file, data) =>
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
@@ -72,6 +72,12 @@ const aceptarTOSServidor = guildId => {
     saveJSON("tos.json", tosServers);
   }
 };
+
+const tosMessage = () =>
+  "📜 **TÉRMINOS DE SERVICIO — SOFTI**\n\n" +
+  "Para usar a Softi debes aceptar los TOS:\n" +
+  "👉 https://terminosycondicionesdeserv.jimdofree.com/\n\n" +
+  "💖 Gracias por cuidar de Softi";
 
 // =====================
 // LOAD CMDS
@@ -106,27 +112,24 @@ async function longcatAI(message, userId) {
   const history = memory.get(userId) ?? [];
   history.push({ role: "user", content: message });
 
-  const res = await fetch(
-    "https://api.longcat.chat/openai/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LONGCAT_API}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "LongCat-Flash-Chat",
-        messages: [
-          {
-            role: "system",
-            content:
-              "Eres Softi 💖. Respondes SIEMPRE en Markdown, con tono kawaii, amable y suave. Usa emojis con moderación."
-          },
-          ...history
-        ]
-      })
-    }
-  );
+  const res = await fetch("https://api.longcat.chat/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${LONGCAT_API}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "LongCat-Flash-Chat",
+      messages: [
+        {
+          role: "system",
+          content:
+            "Eres Softi 💖. Respondes SIEMPRE en Markdown. Tono kawaii, amable y respetuoso."
+        },
+        ...history
+      ]
+    })
+  });
 
   const data = await res.json();
   const reply = data?.choices?.[0]?.message?.content ?? "💖";
@@ -143,55 +146,49 @@ client.on(Events.GuildMemberAdd, member => {
   const cfg = welcomeData[member.guild.id];
   if (!cfg?.welcome) return;
 
-  member.guild.channels.cache.get(cfg.welcome)?.send(
-    `🌸 **Bienvenido/a ${member.user}** 💖`
-  );
+  member.guild.channels.cache
+    .get(cfg.welcome)
+    ?.send(`🌸 **Bienvenido/a ${member.user}** 💖`);
 });
 
 client.on(Events.GuildMemberRemove, member => {
   const cfg = welcomeData[member.guild.id];
   if (!cfg?.bye) return;
 
-  member.guild.channels.cache.get(cfg.bye)?.send(
-    `🕊️ **Hasta luego ${member.user}** 💞`
-  );
+  member.guild.channels.cache
+    .get(cfg.bye)
+    ?.send(`🕊️ **Hasta luego ${member.user}** 💞`);
 });
 
 // =====================
-// SLASH HANDLER
+// INTERACTIONS
 // =====================
 client.on(Events.InteractionCreate, async interaction => {
-  // ---------- BOTONES TOS ----------
+  // BOTÓN TOS
   if (interaction.isButton()) {
     if (interaction.customId === "aceptar_tos_server") {
       aceptarTOSServidor(interaction.guildId);
       return interaction.update({
-        content: "✅ **TOS aceptado** — Softi está activa 💖",
+        content: "✅ **TOS aceptados** — Softi activada 💖",
         components: []
       });
     }
   }
 
-  // ---------- SLASH ----------
   if (!interaction.isChatInputCommand()) return;
 
   const guildId = interaction.guildId;
 
+  // BLOQUEO TOS
   if (guildId && !tosServers.includes(guildId)) {
     return interaction.reply({
-      content: "🔒 **Softi está bloqueada**\nAcepten los TOS 📜",
+      content: tosMessage(),
       ephemeral: true
     });
   }
 
-  const cmd = client.commands.get(interaction.commandName);
-  if (!cmd) return;
-
-  // SOFTI SETWELCOME
-  if (
-    interaction.commandName === "softi" &&
-    interaction.options.getSubcommand() === "setwelcome"
-  ) {
+  // /softisetwelcome
+  if (interaction.commandName === "softisetwelcome") {
     if (
       !interaction.member.permissions.has(
         PermissionsBitField.Flags.Administrator
@@ -206,28 +203,51 @@ client.on(Events.InteractionCreate, async interaction => {
     const bye = interaction.options.getChannel("bye");
 
     welcomeData[guildId] = {
-      welcome: welcome?.id,
-      bye: bye?.id
+      welcome: welcome.id,
+      bye: bye.id
     };
 
     saveJSON("welcome.json", welcomeData);
 
-    return interaction.reply("✅ **Bienvenidas configuradas** 💖");
+    return interaction.reply(
+      "✅ **Canales de bienvenida y despedida configurados** 💖"
+    );
   }
 
-  // SOFTI ADD YT
+  // /softiaddyt
   if (interaction.commandName === "softiaddyt") {
-    const canal = interaction.channel.id;
     ytData[guildId] ??= [];
-    ytData[guildId].push(canal);
-    saveJSON("yt.json", ytData);
+    if (!ytData[guildId].includes(interaction.channel.id)) {
+      ytData[guildId].push(interaction.channel.id);
+      saveJSON("yt.json", ytData);
+    }
 
-    return interaction.reply("📺 **Canal agregado para YouTubers** 💖");
+    return interaction.reply(
+      "📺 **Este canal fue marcado como canal de YouTubers** 💖"
+    );
   }
 
-  // KAWAII CMDS
-  let reply = cmd.reply ?? "✨";
-  reply = reply.replaceAll("{user}", `<@${interaction.user.id}>`);
+  // /players
+  if (interaction.commandName === "players") {
+    const guild = interaction.guild;
+    const total = guild.memberCount;
+
+    const embed = new EmbedBuilder()
+      .setTitle("👥 Players del Servidor")
+      .setDescription(`**Miembros totales:** ${total}`)
+      .setColor(0xffb6c1);
+
+    return interaction.reply({ embeds: [embed] });
+  }
+
+  // CMDS KAWAII
+  const cmd = client.commands.get(interaction.commandName);
+  if (!cmd) return;
+
+  let reply = cmd.reply.replaceAll(
+    "{user}",
+    `<@${interaction.user.id}>`
+  );
 
   if (cmd.options?.length) {
     const target = interaction.options.getUser("target");
@@ -235,44 +255,36 @@ client.on(Events.InteractionCreate, async interaction => {
       reply = reply.replaceAll("{target}", `<@${target.id}>`);
   }
 
-  interaction.reply({
-    content: reply,
-    allowedMentions: { users: [], roles: [] }
-  });
+  interaction.reply({ content: reply });
 });
 
 // =====================
-// MENSAJES (SIEMPRE RESPONDE)
+// MENSAJES (SIEMPRE)
 // =====================
 client.on(Events.MessageCreate, async msg => {
-  if (msg.author.bot || !msg.guild) return;
+  if (msg.author.bot) return;
 
-  // Ignorar comandos
-  if (msg.content.startsWith("/") || msg.content.startsWith("!")) return;
+  // TOS en DM
+  if (!msg.guild) {
+    return msg.reply(tosMessage());
+  }
 
-  // TOS
   if (!tosServers.includes(msg.guild.id)) {
     const boton = new ButtonBuilder()
       .setCustomId("aceptar_tos_server")
-      .setLabel("Aceptar TOS del servidor")
+      .setLabel("Aceptar TOS")
       .setStyle(ButtonStyle.Success);
 
-    const row = new ActionRowBuilder().addComponents(boton);
-
     return msg.reply({
-      content:
-        "📜 **Este servidor debe aceptar los TOS para usar a Softi** 💖\n" +
-        "<https://terminosycondicionesdeserv.jimdofree.com/>",
-      components: [row]
+      content: tosMessage(),
+      components: [new ActionRowBuilder().addComponents(boton)]
     });
   }
 
-  const reply = await longcatAI(msg.content, msg.author.id);
+  if (msg.content.startsWith("/") || msg.content.startsWith("!")) return;
 
-  msg.reply({
-    content: `💬 **Softi dice:**\n\n${reply}`,
-    allowedMentions: { repliedUser: false }
-  });
+  const reply = await longcatAI(msg.content, msg.author.id);
+  msg.reply(`💬 **Softi dice:**\n\n${reply}`);
 });
 
 // =====================
@@ -284,13 +296,11 @@ client.once(Events.ClientReady, async () => {
 });
 
 // =====================
-// 24/7
+// KEEP ALIVE
 // =====================
-http
-  .createServer((_, res) => {
-    res.writeHead(200);
-    res.end("Softi viva 💖");
-  })
-  .listen(process.env.PORT || 3000);
+http.createServer((_, res) => {
+  res.writeHead(200);
+  res.end("Softi viva 💖");
+}).listen(process.env.PORT || 3000);
 
 client.login(TOKEN);
