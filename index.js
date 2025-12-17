@@ -43,7 +43,7 @@ const client = new Client({
 
 client.commands = new Collection();
 const memory = new Map();
-const tosUsuarios = new Set();
+const tosUsuarios = new Set(); // reservado
 
 // =====================
 // FILES
@@ -106,20 +106,27 @@ async function longcatAI(message, userId) {
   const history = memory.get(userId) ?? [];
   history.push({ role: "user", content: message });
 
-  const res = await fetch("https://api.longcat.chat/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LONGCAT_API}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "LongCat-Flash-Chat",
-      messages: [
-        { role: "system", content: "Eres Softi, kawaii y amable." },
-        ...history
-      ]
-    })
-  });
+  const res = await fetch(
+    "https://api.longcat.chat/openai/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LONGCAT_API}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "LongCat-Flash-Chat",
+        messages: [
+          {
+            role: "system",
+            content:
+              "Eres Softi 💖. Respondes SIEMPRE en Markdown, con tono kawaii, amable y suave. Usa emojis con moderación."
+          },
+          ...history
+        ]
+      })
+    }
+  );
 
   const data = await res.json();
   const reply = data?.choices?.[0]?.message?.content ?? "💖";
@@ -135,16 +142,18 @@ async function longcatAI(message, userId) {
 client.on(Events.GuildMemberAdd, member => {
   const cfg = welcomeData[member.guild.id];
   if (!cfg?.welcome) return;
+
   member.guild.channels.cache.get(cfg.welcome)?.send(
-    `🌸 Bienvenido/a ${member.user} 💖`
+    `🌸 **Bienvenido/a ${member.user}** 💖`
   );
 });
 
 client.on(Events.GuildMemberRemove, member => {
   const cfg = welcomeData[member.guild.id];
   if (!cfg?.bye) return;
+
   member.guild.channels.cache.get(cfg.bye)?.send(
-    `🕊️ Hasta luego ${member.user} 💞`
+    `🕊️ **Hasta luego ${member.user}** 💞`
   );
 });
 
@@ -157,7 +166,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.customId === "aceptar_tos_server") {
       aceptarTOSServidor(interaction.guildId);
       return interaction.update({
-        content: "✅ TOS aceptado, Softi está activa 💖",
+        content: "✅ **TOS aceptado** — Softi está activa 💖",
         components: []
       });
     }
@@ -170,7 +179,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
   if (guildId && !tosServers.includes(guildId)) {
     return interaction.reply({
-      content: "🔒 Softi está bloqueada.\nAcepten los TOS 📜",
+      content: "🔒 **Softi está bloqueada**\nAcepten los TOS 📜",
       ephemeral: true
     });
   }
@@ -179,11 +188,19 @@ client.on(Events.InteractionCreate, async interaction => {
   if (!cmd) return;
 
   // SOFTI SETWELCOME
-  if (interaction.commandName === "softi" &&
-      interaction.options.getSubcommand() === "setwelcome") {
-
-    if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator))
-      return interaction.reply({ content: "❌ Solo admins", ephemeral: true });
+  if (
+    interaction.commandName === "softi" &&
+    interaction.options.getSubcommand() === "setwelcome"
+  ) {
+    if (
+      !interaction.member.permissions.has(
+        PermissionsBitField.Flags.Administrator
+      )
+    )
+      return interaction.reply({
+        content: "❌ **Solo administradores**",
+        ephemeral: true
+      });
 
     const welcome = interaction.options.getChannel("welcome");
     const bye = interaction.options.getChannel("bye");
@@ -195,7 +212,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
     saveJSON("welcome.json", welcomeData);
 
-    return interaction.reply("✅ Bienvenidas configuradas 💖");
+    return interaction.reply("✅ **Bienvenidas configuradas** 💖");
   }
 
   // SOFTI ADD YT
@@ -205,7 +222,7 @@ client.on(Events.InteractionCreate, async interaction => {
     ytData[guildId].push(canal);
     saveJSON("yt.json", ytData);
 
-    return interaction.reply("📺 Canal agregado para YouTubers 💖");
+    return interaction.reply("📺 **Canal agregado para YouTubers** 💖");
   }
 
   // KAWAII CMDS
@@ -218,21 +235,22 @@ client.on(Events.InteractionCreate, async interaction => {
       reply = reply.replaceAll("{target}", `<@${target.id}>`);
   }
 
-  interaction.reply(reply);
+  interaction.reply({
+    content: reply,
+    allowedMentions: { users: [], roles: [] }
+  });
 });
 
 // =====================
-// MENSAJES + TOS SERVER
+// MENSAJES (SIEMPRE RESPONDE)
 // =====================
 client.on(Events.MessageCreate, async msg => {
   if (msg.author.bot || !msg.guild) return;
 
-  const contieneSofti =
-    msg.content.toLowerCase().includes("softi") ||
-    msg.mentions.has(client.user);
+  // Ignorar comandos
+  if (msg.content.startsWith("/") || msg.content.startsWith("!")) return;
 
-  if (!contieneSofti) return;
-
+  // TOS
   if (!tosServers.includes(msg.guild.id)) {
     const boton = new ButtonBuilder()
       .setCustomId("aceptar_tos_server")
@@ -243,14 +261,18 @@ client.on(Events.MessageCreate, async msg => {
 
     return msg.reply({
       content:
-        "📜 Este servidor debe aceptar los TOS para usar a Softi\n" +
+        "📜 **Este servidor debe aceptar los TOS para usar a Softi** 💖\n" +
         "<https://terminosycondicionesdeserv.jimdofree.com/>",
       components: [row]
     });
   }
 
   const reply = await longcatAI(msg.content, msg.author.id);
-  msg.reply(reply);
+
+  msg.reply({
+    content: `💬 **Softi dice:**\n\n${reply}`,
+    allowedMentions: { repliedUser: false }
+  });
 });
 
 // =====================
@@ -264,9 +286,11 @@ client.once(Events.ClientReady, async () => {
 // =====================
 // 24/7
 // =====================
-http.createServer((_, res) => {
-  res.writeHead(200);
-  res.end("Softi viva 💖");
-}).listen(process.env.PORT || 3000);
+http
+  .createServer((_, res) => {
+    res.writeHead(200);
+    res.end("Softi viva 💖");
+  })
+  .listen(process.env.PORT || 3000);
 
 client.login(TOKEN);
