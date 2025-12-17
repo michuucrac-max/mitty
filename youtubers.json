@@ -1,0 +1,35 @@
+[
+  { "name": "MrBeast", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCX6OQ3DkcsbYNE6H8uQQuVA" },
+  { "name": "PewDiePie", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UC-lHJZR3Gqxm24_Vd_AJ5Yw" },
+  { "name": "Markiplier", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7_YxT-KID8kRbqZo7MyscQ" },
+  { "name": "Jacksepticeye", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYzPXprvl5Y-Sf0g4vX-m6g" },
+  { "name": "Logan Paul", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCG8rbF3g2AMX70yOd8vqIZg" },
+  { "name": "KSI", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCWZmCMB7mmKWcXJSIPRhzZw" },
+
+  { "name": "Ibai", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCaY_-ksFSQtTGk0y1HA_3YQ" },
+  { "name": "AuronPlay", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCyQqzYXQBUWgBTn4pw_fFSQ" },
+  { "name": "ElRubius", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCXazgXDIYyWH-yXLAkcrFxw" },
+  { "name": "Vegetta777", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCam8T03EOFBsNdR0thrFHdQ" },
+
+  { "name": "Willyrex", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UC7JXGl7XnGq3v9X8yKc7m5g" },
+  { "name": "Dream", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCTkXRDQl0luXxVQrRQvWS6w" },
+  { "name": "Technoblade", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCFAiFyGs6oDiF1Nf-rRJpZA" },
+  { "name": "Mikecrack", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCkKkKk0pO7d8j6o2Y5bZs6A" },
+  { "name": "ElTrollino", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCY6Xz6xgkHf5p3rP7a8x9Zw" },
+
+  { "name": "ItsFunneh", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCkJw4J8qvZ7fT1r9Z5X7zXg" },
+  { "name": "Flamingo", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCx5tM8iP3qY4u0ZJwKpGZrA" },
+  { "name": "KreekCraft", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCtN0G1XqFfJwX5N2Yy4jZgA" },
+
+  { "name": "TheGrefg", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYzPXprvl5Y-Sf0g4vX-m6g" },
+  { "name": "Fernanfloo", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCpGdL9Sn3Q5YWUH2DVUW1Ug" },
+  { "name": "DrossRotzank", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCNYW2vfGrUE6R5mIJYzkRyQ" },
+  { "name": "AriGameplays", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UC1Q8mY1lA5c8yYF2X8mG6ZQ" },
+  { "name": "HolaSoyGerman", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCZ7wY7MRDSygp63HIEfdQZA" },
+
+  { "name": "Bad Bunny", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCmBA_wu8xGg1OfOkfW13Q0Q" },
+  { "name": "Bizarrap", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UC9Kq-yEt1iYsbUzNOoIRK0g" },
+  { "name": "Karol G", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCZuPJZ2kGF2y7xq3Fz8J9RQ" },
+  { "name": "Shakira", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYLNGLIzMhRTi6ZOLjAPSmw" },
+  { "name": "Taylor Swift", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqECaJ8Gagnn7YCbPEzWH6g" }
+]
