@@ -9,7 +9,10 @@ import {
   Collection,
   REST,
   Routes,
-  Events
+  Events,
+  ButtonBuilder,
+  ButtonStyle,
+  ActionRowBuilder
 } from "discord.js";
 
 import fs from "fs";
@@ -39,6 +42,7 @@ const client = new Client({
 
 client.commands = new Collection();
 const memory = new Map();
+const tosUsuarios = new Set(); // usuarios que aceptaron TOS
 
 // =====================
 // LOAD FILES
@@ -153,14 +157,13 @@ client.on(Events.GuildMemberRemove, member => {
 });
 
 // =====================
-// SLASH HANDLER (CLAVE)
+// SLASH HANDLER
 // =====================
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   console.log("⚡ Slash usado:", interaction.commandName);
 
-  // TOS check
   if (!tosServers.includes(interaction.guildId)) {
     return interaction.reply({
       content: "📜 Debes aceptar el TOS primero",
@@ -180,15 +183,45 @@ client.on(Events.InteractionCreate, async interaction => {
 });
 
 // =====================
-// MENSAJES IA
+// MENSAJES IA CON TOS Y LINK
 // =====================
 client.on(Events.MessageCreate, async msg => {
   if (msg.author.bot) return;
-  if (!msg.mentions.has(client.user)) return;
+  if (!msg.content.toLowerCase().includes("softi")) return;
 
-  console.log("💬 IA mencionada");
+  const userId = msg.author.id;
 
-  const reply = await longcatAI(msg.content, msg.author.id);
+  // Si no aceptó TOS
+  if (!tosUsuarios.has(userId)) {
+    const boton = new ButtonBuilder()
+      .setCustomId("aceptar_tos")
+      .setLabel("Aceptar TOS")
+      .setStyle(ButtonStyle.Success);
+
+    const fila = new ActionRowBuilder().addComponents(boton);
+
+    const tosMsg = await msg.reply({
+      content: "📜 Antes de hablar conmigo, debes aceptar mis TOS:\n<https://terminosycondicionesdeserv.jimdofree.com/>\n\nHaz click en el botón para aceptar.",
+      components: [fila]
+    });
+
+    const collector = tosMsg.createMessageComponentCollector({
+      filter: i => i.user.id === userId,
+      time: 60000
+    });
+
+    collector.on("collect", async i => {
+      if (i.customId === "aceptar_tos") {
+        tosUsuarios.add(userId);
+        await i.update({ content: "✅ Gracias! Ahora puedes hablar conmigo 💖", components: [] });
+      }
+    });
+
+    return;
+  }
+
+  // ya aceptó TOS, respondemos con IA
+  const reply = await longcatAI(msg.content, userId);
   msg.reply(reply);
 });
 
