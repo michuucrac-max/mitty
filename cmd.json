@@ -129,7 +129,21 @@
   {
     "name": "softisetwelcome",
     "description": "Configura los canales de bienvenida y despedida 🌸",
-    "reply": "🌸 Softi está configurando las bienvenidas y despedidas del servidor~ 💖"
+    "options": [
+      {
+        "type": 7,
+        "name": "welcome",
+        "description": "Canal de bienvenida",
+        "required": true
+      },
+      {
+        "type": 7,
+        "name": "bye",
+        "description": "Canal de despedida",
+        "required": true
+      }
+    ],
+    "reply": "🌸 **Canales configurados correctamente** 💖\nSofti dará la bienvenida y despedida en los canales seleccionados~"
   },
   {
     "name": "softiaddyt",
