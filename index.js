@@ -165,6 +165,7 @@ client.on(Events.MessageCreate, async msg => {
 
   // -------- DM --------
   if (!msg.guild) {
+    // Si no aceptó TOS, siempre mostrarlo primero
     if (!tosUsersDM.has(msg.author.id)) {
       const boton = new ButtonBuilder()
         .setCustomId("aceptar_tos_dm")
@@ -177,15 +178,14 @@ client.on(Events.MessageCreate, async msg => {
       });
     }
 
-    // Si aceptó TOS, responde normal
-    if (tosUsersDM.has(msg.author.id)) {
-      const reply = await longcatAI(msg.content, msg.author.id);
-      return msg.reply(reply);
-    }
+    // Si ya aceptó TOS, responder normalmente
+    const reply = await longcatAI(msg.content, msg.author.id);
+    return msg.reply(reply);
   }
 
   // -------- SERVER --------
   if (msg.guild && botMentioned) {
+    // Si el servidor no aceptó TOS, siempre mostrarlo primero
     if (!tosServers.includes(msg.guild.id)) {
       const boton = new ButtonBuilder()
         .setCustomId("aceptar_tos_server")
@@ -198,11 +198,9 @@ client.on(Events.MessageCreate, async msg => {
       });
     }
 
-    // Si el servidor aceptó TOS, responde normal
-    if (tosServers.includes(msg.guild.id)) {
-      const reply = await longcatAI(msg.content, msg.author.id);
-      return msg.reply(reply);
-    }
+    // Si ya aceptó TOS, responder normalmente
+    const reply = await longcatAI(msg.content, msg.author.id);
+    return msg.reply(reply);
   }
 });
 
