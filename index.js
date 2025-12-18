@@ -52,9 +52,14 @@ const tosServers = fs.existsSync("tos.json")
   ? JSON.parse(fs.readFileSync("tos.json", "utf8"))
   : [];
 
-const welcomeData = fs.existsSync("welcome.json")
-  ? JSON.parse(fs.readFileSync("welcome.json", "utf8"))
-  : {};
+const welcomeData = {};
+if (fs.existsSync("welcome.json")) {
+  try {
+    Object.assign(welcomeData, JSON.parse(fs.readFileSync("welcome.json", "utf8")));
+  } catch (e) {
+    console.error("Error cargando welcome.json:", e);
+  }
+}
 
 // =====================
 // UTILS
