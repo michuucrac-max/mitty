@@ -19,6 +19,7 @@ import {
 import fs from "fs";
 import fetch from "node-fetch";
 import http from "http";
+import Parser from "rss-parser";
 
 // =====================
 // ENV
@@ -60,6 +61,19 @@ if (fs.existsSync("welcome.json")) {
     console.error("Error cargando welcome.json:", e);
   }
 }
+
+// YT Channels por servidor
+const ytChannels = fs.existsSync("ytChannels.json")
+  ? JSON.parse(fs.readFileSync("ytChannels.json", "utf8"))
+  : {};
+
+// Youtubers RSS
+const ytList = fs.existsSync("yt.json")
+  ? JSON.parse(fs.readFileSync("yt.json", "utf8"))
+  : [];
+
+// Últimos videos enviados
+const lastVideos = {};
 
 // =====================
 // UTILS
@@ -214,6 +228,29 @@ client.on(Events.InteractionCreate, async interaction => {
     );
   }
 
+  // 🌸 /softiaddyt
+  if (interaction.commandName === "softiaddyt") {
+    if (
+      !interaction.member.permissions.has(
+        PermissionsBitField.Flags.Administrator
+      )
+    ) {
+      return interaction.reply({
+        content: "❌ Solo administradores pueden usar este comando",
+        ephemeral: true
+      });
+    }
+
+    const channel = interaction.channel;
+    ytChannels[guildId] = channel.id;
+    saveJSON("ytChannels.json", ytChannels);
+
+    return interaction.reply({
+      content: `📺 Canal registrado para avisos de YouTube: <#${channel.id}> 💖`,
+      ephemeral: true
+    });
+  }
+
   // 💖 COMANDOS KAWAII
   const cmd = client.commands.get(interaction.commandName);
   if (!cmd) return;
@@ -312,11 +349,52 @@ client.on(Events.GuildMemberRemove, async member => {
 });
 
 // =====================
+// YOUTUBE CHECK
+// =====================
+async function checkYouTube() {
+  const parser = new Parser();
+
+  for (const yt of ytList) {
+    try {
+      const feed = await parser.parseURL(yt.rss);
+      const latestVideo = feed.items?.[0];
+      if (!latestVideo) continue;
+
+      const id = latestVideo.id || latestVideo.link;
+      if (lastVideos[yt.name] === id) continue;
+
+      lastVideos[yt.name] = id;
+
+      // Enviar a todos los servidores que tienen canal registrado
+      for (const [guildId, channelId] of Object.entries(ytChannels)) {
+        const guild = client.guilds.cache.get(guildId);
+        if (!guild) continue;
+
+        const channel = guild.channels.cache.get(channelId);
+        if (!channel) continue;
+
+        channel.send(
+          `📺 **Nuevo video de ${yt.name}!** 💖\n` +
+          `🎬 [Ver Video](${latestVideo.link})`
+        );
+      }
+
+    } catch (e) {
+      console.error("Error al revisar RSS de", yt.name, e);
+    }
+  }
+}
+
+// Revisa cada 5 minutos
+setInterval(checkYouTube, 5 * 60 * 1000);
+
+// =====================
 // READY
 // =====================
 client.once(Events.ClientReady, async () => {
   console.log(`🦊 Softi lista como ${client.user.tag}`);
   await registerSlashCommands();
+  checkYouTube(); // revisión inmediata al iniciar
 });
 
 // =====================
