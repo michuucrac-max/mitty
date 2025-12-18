@@ -33,6 +33,5 @@
   { "name": "Shakira", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYLNGLIzMhRTi6ZOLjAPSmw" },
   { "name": "Taylor Swift", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqECaJ8Gagnn7YCbPEzWH6g" },
 
-  {
-  "name": "Juan GutiGUT", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCRwM2P2nZP9RzqYq6kBce-A" }
+  { "name": "Juan GutiGUT", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCRwM2P2nZP9RzqYq6kBce-A" }
 ]
