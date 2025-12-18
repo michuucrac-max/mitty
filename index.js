@@ -19,7 +19,6 @@ import {
 import fs from "fs";
 import fetch from "node-fetch";
 import http from "http";
-import { parse } from "fast-xml-parser"; // ligero, solo para parsear XML
 
 // =====================
 // ENV
@@ -288,7 +287,7 @@ client.on(Events.GuildMemberRemove, async member => {
 });
 
 // =====================
-// YOUTUBE CHECK (sin rss-parser)
+// YOUTUBE CHECK (sin librerías)
 // =====================
 async function checkYouTube() {
   for (const yt of ytList) {
@@ -296,12 +295,21 @@ async function checkYouTube() {
       const res = await fetch(yt.rss);
       const text = await res.text();
 
-      // parsear XML simple
-      const match = text.match(/<entry>[\s\S]*?<id>(.*?)<\/id>[\s\S]*?<link rel="alternate" href="(.*?)"/);
-      if (!match) continue;
+      // extraer primer <entry> del feed
+      const entryMatch = text.match(/<entry>([\s\S]*?)<\/entry>/);
+      if (!entryMatch) continue;
 
-      const videoId = match[1];
-      const videoLink = match[2];
+      const entry = entryMatch[1];
+
+      // obtener ID y link
+      const idMatch = entry.match(/<id>(.*?)<\/id>/);
+      const linkMatch = entry.match(/<link[^>]+href="(.*?)"/);
+
+      if (!idMatch || !linkMatch) continue;
+
+      const videoId = idMatch[1];
+      const videoLink = linkMatch[1];
+
       if (lastVideos[yt.name] === videoId) continue;
       lastVideos[yt.name] = videoId;
 
