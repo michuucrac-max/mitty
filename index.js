@@ -19,7 +19,7 @@ import {
 import fs from "fs";
 import fetch from "node-fetch";
 import http from "http";
-import Parser from "rss-parser";
+import { parse } from "fast-xml-parser"; // ligero, solo para parsear XML
 
 // =====================
 // ENV
@@ -161,7 +161,6 @@ async function longcatAI(message, userId) {
 // INTERACTIONS
 // =====================
 client.on(Events.InteractionCreate, async interaction => {
-  // ----- BOTONES TOS -----
   if (interaction.isButton()) {
     if (interaction.customId === "aceptar_tos_server") {
       aceptarTOSServidor(interaction.guildId);
@@ -184,7 +183,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
   const guildId = interaction.guildId;
 
-  // 🔒 BLOQUEO POR TOS
   if (guildId && !tosServers.includes(guildId)) {
     return interaction.reply({
       content: tosMessage(),
@@ -192,82 +190,47 @@ client.on(Events.InteractionCreate, async interaction => {
     });
   }
 
-  // 🌸 /softisetwelcome
   if (interaction.commandName === "softisetwelcome") {
-    if (
-      !interaction.member.permissions.has(
-        PermissionsBitField.Flags.Administrator
-      )
-    ) {
-      return interaction.reply({
-        content: "❌ Solo administradores pueden usar este comando",
-        ephemeral: true
-      });
+    if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+      return interaction.reply({ content: "❌ Solo administradores pueden usar este comando", ephemeral: true });
     }
 
     const welcome = interaction.options.getChannel("welcome");
     const bye = interaction.options.getChannel("bye");
 
     if (!welcome || !bye) {
-      return interaction.reply({
-        content:
-          "❌ Debes seleccionar **un canal de bienvenida** y **uno de despedida**",
-        ephemeral: true
-      });
+      return interaction.reply({ content: "❌ Debes seleccionar **un canal de bienvenida** y **uno de despedida**", ephemeral: true });
     }
 
-    welcomeData[guildId] = {
-      welcome: welcome.id,
-      bye: bye.id
-    };
-
+    welcomeData[guildId] = { welcome: welcome.id, bye: bye.id };
     saveJSON("welcome.json", welcomeData);
 
-    return interaction.reply(
-      "🌸 **Bienvenidas y despedidas configuradas correctamente** 💖"
-    );
+    return interaction.reply("🌸 **Bienvenidas y despedidas configuradas correctamente** 💖");
   }
 
-  // 🌸 /softiaddyt
   if (interaction.commandName === "softiaddyt") {
-    if (
-      !interaction.member.permissions.has(
-        PermissionsBitField.Flags.Administrator
-      )
-    ) {
-      return interaction.reply({
-        content: "❌ Solo administradores pueden usar este comando",
-        ephemeral: true
-      });
+    if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+      return interaction.reply({ content: "❌ Solo administradores pueden usar este comando", ephemeral: true });
     }
 
     const channel = interaction.channel;
     ytChannels[guildId] = channel.id;
     saveJSON("ytChannels.json", ytChannels);
 
-    return interaction.reply({
-      content: `📺 Canal registrado para avisos de YouTube: <#${channel.id}> 💖`,
-      ephemeral: true
-    });
+    return interaction.reply({ content: `📺 Canal registrado para avisos de YouTube: <#${channel.id}> 💖`, ephemeral: true });
   }
 
-  // 💖 COMANDOS KAWAII
   const cmd = client.commands.get(interaction.commandName);
   if (!cmd) return;
 
-  let reply =
-    cmd.reply?.replaceAll("{user}", `<@${interaction.user.id}>`) ?? "✨";
+  let reply = cmd.reply?.replaceAll("{user}", `<@${interaction.user.id}>`) ?? "✨";
 
   if (cmd.options?.length) {
     const target = interaction.options.getUser("target");
-    if (target)
-      reply = reply.replaceAll("{target}", `<@${target.id}>`);
+    if (target) reply = reply.replaceAll("{target}", `<@${target.id}>`);
   }
 
-  interaction.reply({
-    content: reply,
-    allowedMentions: { users: [], roles: [] }
-  });
+  interaction.reply({ content: reply, allowedMentions: { users: [], roles: [] } });
 });
 
 // =====================
@@ -276,35 +239,21 @@ client.on(Events.InteractionCreate, async interaction => {
 client.on(Events.MessageCreate, async msg => {
   if (msg.author.bot) return;
 
-  // ===== MD =====
   if (!msg.guild) {
     if (!tosUsersDM.has(msg.author.id)) {
-      const boton = new ButtonBuilder()
-        .setCustomId("aceptar_tos_dm")
-        .setLabel("Aceptar TOS")
-        .setStyle(ButtonStyle.Success);
+      const boton = new ButtonBuilder().setCustomId("aceptar_tos_dm").setLabel("Aceptar TOS").setStyle(ButtonStyle.Success);
 
-      return msg.reply({
-        content: tosMessage(),
-        components: [new ActionRowBuilder().addComponents(boton)]
-      });
+      return msg.reply({ content: tosMessage(), components: [new ActionRowBuilder().addComponents(boton)] });
     }
 
     const reply = await longcatAI(msg.content, msg.author.id);
     return msg.reply(`💬 **Softi dice:**\n\n${reply}`);
   }
 
-  // ===== SERVIDORES SIN TOS =====
   if (!tosServers.includes(msg.guild.id)) {
-    const boton = new ButtonBuilder()
-      .setCustomId("aceptar_tos_server")
-      .setLabel("Aceptar TOS del servidor")
-      .setStyle(ButtonStyle.Success);
+    const boton = new ButtonBuilder().setCustomId("aceptar_tos_server").setLabel("Aceptar TOS del servidor").setStyle(ButtonStyle.Success);
 
-    return msg.reply({
-      content: tosMessage(),
-      components: [new ActionRowBuilder().addComponents(boton)]
-    });
+    return msg.reply({ content: tosMessage(), components: [new ActionRowBuilder().addComponents(boton)] });
   }
 
   if (msg.content.startsWith("/") || msg.content.startsWith("!")) return;
@@ -319,73 +268,57 @@ client.on(Events.MessageCreate, async msg => {
 client.on(Events.GuildMemberAdd, async member => {
   const cfg = welcomeData[member.guild.id];
   if (!cfg?.welcome) return;
-
   const canal = await member.guild.channels.fetch(cfg.welcome).catch(() => null);
   if (!canal) return;
 
   console.log("👋 Nuevo miembro:", member.user.tag);
 
-  canal.send(
-    `🌸 **Hola ${member.user}!** 💖\n\n` +
-      `Bienvenido a **${member.guild.name}** ✨\n` +
-      `No olvides leer las reglas jiji~ 📜\n\n` +
-      `Recuerda que puedes hablar conmigo si gustas 🦊💬`
-  );
+  canal.send(`🌸 **Hola ${member.user}!** 💖\n\nBienvenido a **${member.guild.name}** ✨\nNo olvides leer las reglas jiji~ 📜\n\nRecuerda que puedes hablar conmigo si gustas 🦊💬`);
 });
 
 client.on(Events.GuildMemberRemove, async member => {
   const cfg = welcomeData[member.guild.id];
   if (!cfg?.bye) return;
-
   const canal = await member.guild.channels.fetch(cfg.bye).catch(() => null);
   if (!canal) return;
 
   console.log("👋 Miembro salido:", member.user.tag);
 
-  canal.send(
-    `🕊️ **${member.user.username}** se ha despedido de **${member.guild.name}**~ 💞\n` +
-      `Softi le desea lo mejor ✨`
-  );
+  canal.send(`🕊️ **${member.user.username}** se ha despedido de **${member.guild.name}**~ 💞\nSofti le desea lo mejor ✨`);
 });
 
 // =====================
-// YOUTUBE CHECK
+// YOUTUBE CHECK (sin rss-parser)
 // =====================
 async function checkYouTube() {
-  const parser = new Parser();
-
   for (const yt of ytList) {
     try {
-      const feed = await parser.parseURL(yt.rss);
-      const latestVideo = feed.items?.[0];
-      if (!latestVideo) continue;
+      const res = await fetch(yt.rss);
+      const text = await res.text();
 
-      const id = latestVideo.id || latestVideo.link;
-      if (lastVideos[yt.name] === id) continue;
+      // parsear XML simple
+      const match = text.match(/<entry>[\s\S]*?<id>(.*?)<\/id>[\s\S]*?<link rel="alternate" href="(.*?)"/);
+      if (!match) continue;
 
-      lastVideos[yt.name] = id;
+      const videoId = match[1];
+      const videoLink = match[2];
+      if (lastVideos[yt.name] === videoId) continue;
+      lastVideos[yt.name] = videoId;
 
-      // Enviar a todos los servidores que tienen canal registrado
       for (const [guildId, channelId] of Object.entries(ytChannels)) {
         const guild = client.guilds.cache.get(guildId);
         if (!guild) continue;
-
         const channel = guild.channels.cache.get(channelId);
         if (!channel) continue;
 
-        channel.send(
-          `📺 **Nuevo video de ${yt.name}!** 💖\n` +
-          `🎬 [Ver Video](${latestVideo.link})`
-        );
+        channel.send(`📺 **Nuevo video de ${yt.name}!** 💖\n🎬 [Ver Video](${videoLink})`);
       }
-
     } catch (e) {
       console.error("Error al revisar RSS de", yt.name, e);
     }
   }
 }
 
-// Revisa cada 5 minutos
 setInterval(checkYouTube, 5 * 60 * 1000);
 
 // =====================
@@ -394,7 +327,7 @@ setInterval(checkYouTube, 5 * 60 * 1000);
 client.once(Events.ClientReady, async () => {
   console.log(`🦊 Softi lista como ${client.user.tag}`);
   await registerSlashCommands();
-  checkYouTube(); // revisión inmediata al iniciar
+  checkYouTube();
 });
 
 // =====================
