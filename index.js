@@ -7,8 +7,6 @@ import {
   GatewayIntentBits,
   Partials,
   Collection,
-  REST,
-  Routes,
   Events,
   ButtonBuilder,
   ButtonStyle,
@@ -23,7 +21,6 @@ import http from "http";
 // ENV
 // =====================
 const TOKEN = process.env.TOKEN;
-const CLIENT_ID = process.env.CLIENT_ID;
 const LONGCAT_API = process.env.LONGCAT_API;
 
 // =====================
@@ -131,7 +128,7 @@ async function longcatAI(message, userId) {
 }
 
 // =====================
-// INTERACTIONS (BOTONES)
+// BOTONES
 // =====================
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isButton()) return;
@@ -139,7 +136,7 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.customId === "aceptar_tos_server") {
     aceptarTOSServidor(interaction.guildId);
     return interaction.update({
-      content: "✅ **TOS aceptados** — Softi activada 💖",
+      content: "✅ **TOS aceptados en el servidor** — Softi activada 💖",
       components: []
     });
   }
@@ -147,27 +144,24 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.customId === "aceptar_tos_dm") {
     aceptarTOSUsuario(interaction.user.id);
     return interaction.update({
-      content: "✅ **TOS aceptados en MD** 💖",
+      content: "✅ **TOS aceptados en MD** — Softi activada 💖",
       components: []
     });
   }
 });
 
 // =====================
-// MESSAGES
+// MENSAJES
 // =====================
 client.on(Events.MessageCreate, async msg => {
   if (msg.author.bot) return;
 
   const contentLower = msg.content.toLowerCase();
-  const botId = client.user.id;
-  const botName = client.user.username.toLowerCase();
-
   const botMentioned =
-    msg.mentions.has(botId) || 
-    contentLower.includes("softi") || 
-    contentLower.includes("softitales") || 
-    contentLower.includes(botName);
+    msg.mentions.has(client.user.id) ||
+    contentLower.includes("softi") ||
+    contentLower.includes("softitales") ||
+    contentLower.includes(client.user.username.toLowerCase());
 
   // -------- DM --------
   if (!msg.guild) {
@@ -183,26 +177,32 @@ client.on(Events.MessageCreate, async msg => {
       });
     }
 
-    const reply = await longcatAI(msg.content, msg.author.id);
-    return msg.reply(reply);
+    // Si aceptó TOS, responde normal
+    if (tosUsersDM.has(msg.author.id)) {
+      const reply = await longcatAI(msg.content, msg.author.id);
+      return msg.reply(reply);
+    }
   }
 
   // -------- SERVER --------
-  if (botMentioned && !tosServers.includes(msg.guild.id)) {
-    const boton = new ButtonBuilder()
-      .setCustomId("aceptar_tos_server")
-      .setLabel("Aceptar TOS del servidor")
-      .setStyle(ButtonStyle.Success);
+  if (msg.guild && botMentioned) {
+    if (!tosServers.includes(msg.guild.id)) {
+      const boton = new ButtonBuilder()
+        .setCustomId("aceptar_tos_server")
+        .setLabel("Aceptar TOS del servidor")
+        .setStyle(ButtonStyle.Success);
 
-    return msg.reply({
-      content: tosMessage(),
-      components: [new ActionRowBuilder().addComponents(boton)]
-    });
-  }
+      return msg.reply({
+        content: tosMessage(),
+        components: [new ActionRowBuilder().addComponents(boton)]
+      });
+    }
 
-  if (botMentioned && tosServers.includes(msg.guild.id)) {
-    const reply = await longcatAI(msg.content, msg.author.id);
-    return msg.reply(reply);
+    // Si el servidor aceptó TOS, responde normal
+    if (tosServers.includes(msg.guild.id)) {
+      const reply = await longcatAI(msg.content, msg.author.id);
+      return msg.reply(reply);
+    }
   }
 });
 
