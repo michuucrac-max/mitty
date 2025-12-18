@@ -160,10 +160,14 @@ client.on(Events.MessageCreate, async msg => {
   if (msg.author.bot) return;
 
   const contentLower = msg.content.toLowerCase();
+  const botId = client.user.id;
+  const botName = client.user.username.toLowerCase();
+
   const botMentioned =
-    msg.mentions.users.has(client.user.id) ||
-    contentLower.includes("softi") ||
-    contentLower.includes("softitales");
+    msg.mentions.has(botId) || 
+    contentLower.includes("softi") || 
+    contentLower.includes("softitales") || 
+    contentLower.includes(botName);
 
   // -------- DM --------
   if (!msg.guild) {
