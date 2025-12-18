@@ -157,11 +157,8 @@ client.on(Events.MessageCreate, async msg => {
   if (msg.author.bot) return;
 
   const contentLower = msg.content.toLowerCase();
-  const botMentioned =
-    msg.mentions.users.has(client.user.id) || // CORRECTO
-    contentLower.includes("softi") ||
-    contentLower.includes("softitales") ||
-    contentLower.includes(client.user.username.toLowerCase());
+  const mentionsSofti =
+    /\bsofti\b/.test(contentLower) || /\bsoftitales\b/.test(contentLower);
 
   // -------- DM --------
   if (!msg.guild) {
@@ -182,7 +179,7 @@ client.on(Events.MessageCreate, async msg => {
   }
 
   // -------- SERVER --------
-  if (msg.guild && botMentioned) {
+  if (msg.guild && mentionsSofti) {
     if (!tosServers.includes(msg.guild.id)) {
       const boton = new ButtonBuilder()
         .setCustomId("aceptar_tos_server")
