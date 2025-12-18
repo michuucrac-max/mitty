@@ -31,5 +31,8 @@
   { "name": "Bizarrap", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UC9Kq-yEt1iYsbUzNOoIRK0g" },
   { "name": "Karol G", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCZuPJZ2kGF2y7xq3Fz8J9RQ" },
   { "name": "Shakira", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYLNGLIzMhRTi6ZOLjAPSmw" },
-  { "name": "Taylor Swift", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqECaJ8Gagnn7YCbPEzWH6g" }
+  { "name": "Taylor Swift", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCqECaJ8Gagnn7YCbPEzWH6g" },
+
+  {
+  "name": "Juan GutiGUT", "rss": "https://www.youtube.com/feeds/videos.xml?channel_id=UCRwM2P2nZP9RzqYq6kBce-A" }
 ]
