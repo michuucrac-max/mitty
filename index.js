@@ -279,11 +279,16 @@ client.on(Events.MessageCreate, async msg => {
 // =====================
 // BIENVENIDA / DESPEDIDA
 // =====================
-client.on(Events.GuildMemberAdd, member => {
+client.on(Events.GuildMemberAdd, async member => {
   const cfg = welcomeData[member.guild.id];
   if (!cfg?.welcome) return;
 
-  member.guild.channels.cache.get(cfg.welcome)?.send(
+  const canal = await member.guild.channels.fetch(cfg.welcome).catch(() => null);
+  if (!canal) return;
+
+  console.log("👋 Nuevo miembro:", member.user.tag);
+
+  canal.send(
     `🌸 **Hola ${member.user}!** 💖\n\n` +
       `Bienvenido a **${member.guild.name}** ✨\n` +
       `No olvides leer las reglas jiji~ 📜\n\n` +
@@ -291,11 +296,16 @@ client.on(Events.GuildMemberAdd, member => {
   );
 });
 
-client.on(Events.GuildMemberRemove, member => {
+client.on(Events.GuildMemberRemove, async member => {
   const cfg = welcomeData[member.guild.id];
   if (!cfg?.bye) return;
 
-  member.guild.channels.cache.get(cfg.bye)?.send(
+  const canal = await member.guild.channels.fetch(cfg.bye).catch(() => null);
+  if (!canal) return;
+
+  console.log("👋 Miembro salido:", member.user.tag);
+
+  canal.send(
     `🕊️ **${member.user.username}** se ha despedido de **${member.guild.name}**~ 💞\n` +
       `Softi le desea lo mejor ✨`
   );
