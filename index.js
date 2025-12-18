@@ -158,14 +158,13 @@ client.on(Events.MessageCreate, async msg => {
 
   const contentLower = msg.content.toLowerCase();
   const botMentioned =
-    msg.mentions.has(client.user.id) ||
+    msg.mentions.users.has(client.user.id) || // CORRECTO
     contentLower.includes("softi") ||
     contentLower.includes("softitales") ||
     contentLower.includes(client.user.username.toLowerCase());
 
   // -------- DM --------
   if (!msg.guild) {
-    // Si no aceptó TOS, siempre mostrarlo primero
     if (!tosUsersDM.has(msg.author.id)) {
       const boton = new ButtonBuilder()
         .setCustomId("aceptar_tos_dm")
@@ -178,14 +177,12 @@ client.on(Events.MessageCreate, async msg => {
       });
     }
 
-    // Si ya aceptó TOS, responder normalmente
     const reply = await longcatAI(msg.content, msg.author.id);
     return msg.reply(reply);
   }
 
   // -------- SERVER --------
   if (msg.guild && botMentioned) {
-    // Si el servidor no aceptó TOS, siempre mostrarlo primero
     if (!tosServers.includes(msg.guild.id)) {
       const boton = new ButtonBuilder()
         .setCustomId("aceptar_tos_server")
@@ -198,7 +195,6 @@ client.on(Events.MessageCreate, async msg => {
       });
     }
 
-    // Si ya aceptó TOS, responder normalmente
     const reply = await longcatAI(msg.content, msg.author.id);
     return msg.reply(reply);
   }
