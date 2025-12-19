@@ -319,7 +319,7 @@ async function checkYouTube() {
         const channel = guild.channels.cache.get(channelId);
         if (!channel) continue;
 
-        channel.send(`📺 **Nuevo video de ${yt.name}!** 💖\n🎬 [Ver Video](${videoLink})`);
+        channel.send(`📺 **@everyone Nuevo video de ${yt.name}!** 💖\n🎬 [Ver Video](${videoLink})`);
       }
     } catch (e) {
       console.error("Error al revisar RSS de", yt.name, e);
