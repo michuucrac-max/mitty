@@ -258,7 +258,7 @@ client.on(Events.MessageCreate, async msg => {
   if (msg.content.startsWith("/") || msg.content.startsWith("!")) return;
 
   const reply = await longcatAI(msg.content, msg.author.id);
-  msg.reply(`💬 **Softi dice:**\n\n${reply}`);
+  msg.reply(`${reply}`);
 });
 
 // =====================
@@ -272,7 +272,7 @@ client.on(Events.GuildMemberAdd, async member => {
 
   console.log("👋 Nuevo miembro:", member.user.tag);
 
-  canal.send(`🌸 **Hola ${member.user}!** 💖\n\nBienvenido a **${member.guild.name}** ✨\nNo olvides leer las reglas jiji~ 📜\n\nRecuerda que puedes hablar conmigo si gustas 🦊💬`);
+  canal.send(`🌸 **@everyone Hola ${member.user}!** 💖\n\nBienvenido a **${member.guild.name}** ✨\nNo olvides leer las reglas jiji~ 📜\n\nRecuerda que puedes hablar conmigo si gustas 🦊💬`);
 });
 
 client.on(Events.GuildMemberRemove, async member => {
@@ -283,7 +283,7 @@ client.on(Events.GuildMemberRemove, async member => {
 
   console.log("👋 Miembro salido:", member.user.tag);
 
-  canal.send(`🕊️ **${member.user.username}** se ha despedido de **${member.guild.name}**~ 💞\nSofti le desea lo mejor ✨`);
+  canal.send(`@everyone 🕊️ **${member.user.username}** se ha despedido de **${member.guild.name}**~ 💞\nSofti le desea lo mejor ✨`);
 });
 
 // =====================
