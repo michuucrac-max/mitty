@@ -68,8 +68,6 @@ const ytList = fs.existsSync("yt.json")
   ? JSON.parse(fs.readFileSync("yt.json", "utf8"))
   : [];
 
-const lastVideos = {};
-
 // =====================
 // UTILS
 // =====================
@@ -184,7 +182,10 @@ client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.guildId && !tosServers.includes(interaction.guildId)) {
-    return interaction.reply({ content: tosMessage(), ephemeral: true });
+    return interaction.reply({
+      content: tosMessage(),
+      ephemeral: true
+    });
   }
 
   const cmd = client.commands.get(interaction.commandName);
@@ -193,7 +194,10 @@ client.on(Events.InteractionCreate, async interaction => {
   let reply = cmd.reply ?? "✨";
   reply = reply.replaceAll("{user}", `<@${interaction.user.id}>`);
 
-  interaction.reply({ content: reply });
+  interaction.reply({
+    content: reply,
+    allowedMentions: { parse: [] }
+  });
 });
 
 // =====================
@@ -211,22 +215,29 @@ client.on(Events.MessageCreate, async msg => {
 
       return msg.reply({
         content: tosMessage(),
-        components: [new ActionRowBuilder().addComponents(boton)]
+        components: [new ActionRowBuilder().addComponents(boton)],
+        allowedMentions: { parse: [] }
       });
     }
 
     const reply = await longcatAI(msg.content, msg.author.id);
-    return msg.reply(`💬 **Softi dice:**\n\n${reply}`);
+    return msg.reply({
+      content: `💬 **Softi dice:**\n\n${reply}`,
+      allowedMentions: { parse: [] }
+    });
   }
 
   if (!tosServers.includes(msg.guild.id)) return;
 
   const reply = await longcatAI(msg.content, msg.author.id);
-  msg.reply(`💬 Softi dice:\n\n${reply}`);
+  msg.reply({
+    content: `💬 Softi dice:\n\n${reply}`,
+    allowedMentions: { parse: [] }
+  });
 });
 
 // =====================
-// BIENVENIDA / DESPEDIDA (NO TOCAR)
+// BIENVENIDA / DESPEDIDA (SAFE)
 // =====================
 client.on(Events.GuildMemberAdd, async member => {
   const cfg = welcomeData[member.guild.id];
@@ -235,9 +246,13 @@ client.on(Events.GuildMemberAdd, async member => {
   const canal = await member.guild.channels.fetch(cfg.welcome).catch(() => null);
   if (!canal) return;
 
-  canal.send(
-    `@everyone 🌸 Hola ${member.user}! 💖\n\nBienvenido a ${member.guild.name} ✨`
-  );
+  canal.send({
+    content:
+      `🌸 **Nuevo miembro**\n\n` +
+      `Hola ${member.user.username}! 💖\n` +
+      `Bienvenido a **${member.guild.name}** ✨`,
+    allowedMentions: { parse: [] }
+  });
 });
 
 client.on(Events.GuildMemberRemove, async member => {
@@ -247,16 +262,18 @@ client.on(Events.GuildMemberRemove, async member => {
   const canal = await member.guild.channels.fetch(cfg.bye).catch(() => null);
   if (!canal) return;
 
-  canal.send(
-    `@everyone 🕊️ ${member.user.username} se ha despedido de ${member.guild.name}~ 💞`
-  );
+  canal.send({
+    content:
+      `🕊️ **Despedida**\n\n` +
+      `${member.user.username} ha salido de **${member.guild.name}** 💞`,
+    allowedMentions: { parse: [] }
+  });
 });
 
 // =====================
 // READY
 // =====================
 client.once(Events.ClientReady, async () => {
-  client.user.setStatus("online");
   console.log(`🦊 Softi conectada como ${client.user.tag}`);
   await registerSlashCommands();
 });
