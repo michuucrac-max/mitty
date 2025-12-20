@@ -12,8 +12,7 @@ import {
   Events,
   ButtonBuilder,
   ButtonStyle,
-  ActionRowBuilder,
-  PermissionsBitField
+  ActionRowBuilder
 } from "discord.js";
 
 import fs from "fs";
@@ -26,6 +25,11 @@ import http from "http";
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const LONGCAT_API = process.env.LONGCAT_API;
+
+if (!TOKEN || !CLIENT_ID) {
+  console.error("❌ Faltan variables de entorno");
+  process.exit(1);
+}
 
 // =====================
 // CLIENT
@@ -52,17 +56,9 @@ const tosServers = fs.existsSync("tos.json")
   ? JSON.parse(fs.readFileSync("tos.json", "utf8"))
   : [];
 
-const welcomeData = {};
-if (fs.existsSync("welcome.json")) {
-  try {
-    Object.assign(
-      welcomeData,
-      JSON.parse(fs.readFileSync("welcome.json", "utf8"))
-    );
-  } catch (e) {
-    console.error("Error cargando welcome.json:", e);
-  }
-}
+const welcomeData = fs.existsSync("welcome.json")
+  ? JSON.parse(fs.readFileSync("welcome.json", "utf8"))
+  : {};
 
 const ytChannels = fs.existsSync("ytChannels.json")
   ? JSON.parse(fs.readFileSync("ytChannels.json", "utf8"))
@@ -88,34 +84,39 @@ const aceptarTOSServidor = guildId => {
 };
 
 const tosMessage = () =>
-  "📜 TÉRMINOS DE SERVICIO — SOFTI\n\n" +
+  "📜 **TÉRMINOS DE SERVICIO — SOFTI**\n\n" +
   "Para usar a Softi debes aceptar los TOS:\n" +
   "👉 https://terminosycondicionesdeserv.jimdofree.com/\n\n" +
   "💖 Gracias por cuidar de Softi";
 
 // =====================
-// LOAD CMDS
+// LOAD COMMANDS
 // =====================
-const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
-const slashCommands = [];
-
-for (const cmd of rawCmds) {
-  slashCommands.push({
-    name: cmd.name,
-    description: cmd.description,
-    options: cmd.options ?? []
-  });
-  client.commands.set(cmd.name, cmd);
+if (fs.existsSync("cmd.json")) {
+  const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
+  for (const cmd of rawCmds) {
+    client.commands.set(cmd.name, cmd);
+  }
 }
 
 // =====================
 // REGISTER SLASH
 // =====================
 async function registerSlashCommands() {
+  if (!fs.existsSync("cmd.json")) return;
+
+  const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
+  const slashCommands = rawCmds.map(c => ({
+    name: c.name,
+    description: c.description,
+    options: c.options ?? []
+  }));
+
   const rest = new REST({ version: "10" }).setToken(TOKEN);
   await rest.put(Routes.applicationCommands(CLIENT_ID), {
     body: slashCommands
   });
+
   console.log("✅ Slash commands registrados");
 }
 
@@ -123,6 +124,8 @@ async function registerSlashCommands() {
 // LONGCAT AI
 // =====================
 async function longcatAI(message, userId) {
+  if (!LONGCAT_API) return "💖";
+
   const history = memory.get(userId) ?? [];
   history.push({ role: "user", content: message });
 
@@ -172,7 +175,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.customId === "aceptar_tos_dm") {
       tosUsersDM.add(interaction.user.id);
       return interaction.update({
-        content: "✅ TOS aceptados en MD 💖\nAhora puedes hablar con Softi",
+        content: "✅ TOS aceptados en MD 💖",
         components: []
       });
     }
@@ -180,42 +183,17 @@ client.on(Events.InteractionCreate, async interaction => {
 
   if (!interaction.isChatInputCommand()) return;
 
-  const guildId = interaction.guildId;
-
-  if (guildId && !tosServers.includes(guildId)) {
-    return interaction.reply({
-      content: tosMessage(),
-      ephemeral: true
-    });
-  }
-
-  if (interaction.commandName === "softiaddyt") {
-    const channel = interaction.channel;
-    ytChannels[guildId] = channel.id;
-    saveJSON("ytChannels.json", ytChannels);
-
-    return interaction.reply({
-      content: `📺 Canal registrado para avisos de YouTube: <#${channel.id}> 💖`,
-      ephemeral: true
-    });
+  if (interaction.guildId && !tosServers.includes(interaction.guildId)) {
+    return interaction.reply({ content: tosMessage(), ephemeral: true });
   }
 
   const cmd = client.commands.get(interaction.commandName);
   if (!cmd) return;
 
-  let reply =
-    cmd.reply?.replaceAll("{user}", `<@${interaction.user.id}>`) ?? "✨";
+  let reply = cmd.reply ?? "✨";
+  reply = reply.replaceAll("{user}", `<@${interaction.user.id}>`);
 
-  if (cmd.options?.length) {
-    const target = interaction.options.getUser("target");
-    if (target)
-      reply = reply.replaceAll("{target}", `<@${target.id}>`);
-  }
-
-  interaction.reply({
-    content: reply,
-    allowedMentions: { users: [], roles: [] }
-  });
+  interaction.reply({ content: reply });
 });
 
 // =====================
@@ -248,19 +226,17 @@ client.on(Events.MessageCreate, async msg => {
 });
 
 // =====================
-// BIENVENIDA / DESPEDIDA
+// BIENVENIDA / DESPEDIDA (NO TOCAR)
 // =====================
 client.on(Events.GuildMemberAdd, async member => {
   const cfg = welcomeData[member.guild.id];
   if (!cfg?.welcome) return;
 
-  const canal = await member.guild.channels
-    .fetch(cfg.welcome)
-    .catch(() => null);
+  const canal = await member.guild.channels.fetch(cfg.welcome).catch(() => null);
   if (!canal) return;
 
   canal.send(
-    `@everyone 🌸 demosle la bienvenida a ${member.user}! 💖\n\nBienvenido a ${member.guild.name} ✨\nNo olvides leer las reglas jiji~ 📜\n\nRecuerda que puedes hablar conmigo si gustas 🦊💬`
+    `@everyone 🌸 Hola ${member.user}! 💖\n\nBienvenido a ${member.guild.name} ✨`
   );
 });
 
@@ -268,73 +244,29 @@ client.on(Events.GuildMemberRemove, async member => {
   const cfg = welcomeData[member.guild.id];
   if (!cfg?.bye) return;
 
-  const canal = await member.guild.channels
-    .fetch(cfg.bye)
-    .catch(() => null);
+  const canal = await member.guild.channels.fetch(cfg.bye).catch(() => null);
   if (!canal) return;
 
   canal.send(
-    `@everyone 🕊️ ${member.user.username} se ha despedido de ${member.guild.name}~ 💞\nSofti le desea lo mejor ✨`
+    `@everyone 🕊️ ${member.user.username} se ha despedido de ${member.guild.name}~ 💞`
   );
 });
-
-// =====================
-// YOUTUBE CHECK
-// =====================
-async function checkYouTube() {
-  for (const yt of ytList) {
-    try {
-      const res = await fetch(yt.rss);
-      const text = await res.text();
-
-      const entryMatch = text.match(/<entry>([\s\S]*?)<\/entry>/);
-      if (!entryMatch) continue;
-
-      const entry = entryMatch[1];
-      const idMatch = entry.match(/<id>(.*?)<\/id>/);
-      const linkMatch = entry.match(/href="(.*?)"/);
-
-      if (!idMatch || !linkMatch) continue;
-
-      const videoId = idMatch[1];
-      const videoLink = linkMatch[1];
-
-      if (lastVideos[yt.name] === videoId) continue;
-      lastVideos[yt.name] = videoId;
-
-      for (const channelId of Object.values(ytChannels)) {
-        const channel = client.channels.cache.get(channelId);
-        if (!channel) continue;
-
-        channel.send(
-          `📺 **@everyone Nuevo video de ${yt.name}!** 💖\n🎬 [Ver Video](${videoLink})`
-        );
-      }
-    } catch (e) {
-      console.error("Error al revisar RSS de", yt.name, e);
-    }
-  }
-}
-
-setInterval(checkYouTube, 5 * 60 * 1000);
 
 // =====================
 // READY
 // =====================
 client.once(Events.ClientReady, async () => {
-  console.log(`🦊 Softi lista como ${client.user.tag}`);
+  client.user.setStatus("online");
+  console.log(`🦊 Softi conectada como ${client.user.tag}`);
   await registerSlashCommands();
-  checkYouTube();
 });
 
 // =====================
 // KEEP ALIVE
 // =====================
-http
-  .createServer((_, res) => {
-    res.writeHead(200);
-    res.end("Softi viva 💖");
-  })
-  .listen(process.env.PORT || 3000);
+http.createServer((_, res) => {
+  res.writeHead(200);
+  res.end("Softi viva 💖");
+}).listen(process.env.PORT || 3000);
 
 client.login(TOKEN);
