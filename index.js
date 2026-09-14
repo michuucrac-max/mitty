@@ -32,9 +32,9 @@ if (!TOKEN) {
 }
 
 if (!process.env.GIF_TOKEN) {
-  console.error("[MITTY] ⚠️ Falta GIF_TOKEN.");
+    console.error("[MITTY] ❌ Falta GIF_TOKEN.");
+    process.exit(1);
 }
-
 
 /* =========================
    RUTAS
