@@ -1,250 +1,429 @@
-// -------------------------
-//  SOFTI TALES — INDEX.JS
-// -------------------------
+const {
+    Client,
+    GatewayIntentBits,
+    ActivityType,
+    Events
+} = require("discord.js");
 
-import {
-  Client,
-  GatewayIntentBits,
-  Partials,
-  Collection,
-  REST,
-  Routes,
-  Events,
-  ButtonBuilder,
-  ButtonStyle,
-  ActionRowBuilder
-} from "discord.js";
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
 
-import fs from "fs";
-import fetch from "node-fetch";
-import http from "http";
+// ============================================================
+// CONFIGURACIÓN
+// ============================================================
 
-// =====================
-// ENV
-// =====================
 const TOKEN = process.env.TOKEN;
-const CLIENT_ID = process.env.CLIENT_ID;
-const LONGCAT_API = process.env.LONGCAT_API;
+const PORT = process.env.PORT || 3000;
+const OWNER_ID = process.env.OWNER_ID;
 
-if (!TOKEN || !CLIENT_ID) {
-  console.error("❌ Faltan variables de entorno");
-  process.exit(1);
+const PREFIX = "m;";
+
+if (!TOKEN) {
+    console.error("❌ No se encontró la variable de entorno TOKEN.");
+    process.exit(1);
 }
 
-// =====================
-// CLIENT
-// =====================
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.DirectMessages
-  ],
-  partials: [Partials.Channel]
+// ============================================================
+// ARCHIVOS
+// ============================================================
+
+const BASE_PATH = __dirname;
+
+const CMD_PATH = path.join(BASE_PATH, "cmd.json");
+const GIFS_PATH = path.join(BASE_PATH, "gifs.json");
+const STATUS_PATH = path.join(BASE_PATH, "status.json");
+const CONFIG_PATH = path.join(BASE_PATH, "config.json");
+
+// ============================================================
+// CARGADOR JSON
+// ============================================================
+
+function loadJSON(filePath, fallback = {}) {
+    try {
+        if (!fs.existsSync(filePath)) {
+            console.warn(
+                `⚠️ No se encontró ${path.basename(filePath)}`
+            );
+
+            return fallback;
+        }
+
+        const data = fs.readFileSync(filePath, "utf8");
+
+        return JSON.parse(data);
+
+    } catch (error) {
+        console.error(
+            `❌ Error leyendo ${path.basename(filePath)}:`,
+            error.message
+        );
+
+        return fallback;
+    }
+}
+
+// ============================================================
+// DATOS
+// ============================================================
+
+const commands = loadJSON(CMD_PATH, {});
+const gifs = loadJSON(GIFS_PATH, {});
+const config = loadJSON(CONFIG_PATH, {});
+
+let statusData = loadJSON(STATUS_PATH, {
+    statuses: [
+        "🐾 Mitty está dando vueltecitas..."
+    ],
+
+    thinking: [
+        "¿En qué estás pensando?"
+    ]
 });
 
-client.commands = new Collection();
-const memory = new Map();
-const tosUsersDM = new Set();
+// ============================================================
+// VALIDACIÓN DE STATUS.JSON
+// ============================================================
 
-// =====================
-// ARCHIVOS
-// =====================
-const tosServers = fs.existsSync("tos.json")
-  ? JSON.parse(fs.readFileSync("tos.json", "utf8"))
-  : [];
+if (!Array.isArray(statusData.statuses)) {
+    console.warn(
+        "⚠️ status.json no tiene una lista válida de 'statuses'."
+    );
 
-const welcomeData = fs.existsSync("welcome.json")
-  ? JSON.parse(fs.readFileSync("welcome.json", "utf8"))
-  : {};
-
-const ytChannels = fs.existsSync("ytChannels.json")
-  ? JSON.parse(fs.readFileSync("ytChannels.json", "utf8"))
-  : {};
-
-const ytList = fs.existsSync("yt.json")
-  ? JSON.parse(fs.readFileSync("yt.json", "utf8"))
-  : [];
-
-// =====================
-// UTILIDADES
-// =====================
-const saveJSON = (file, data) =>
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-
-const aceptarTOSServidor = guildId => {
-  if (!tosServers.includes(guildId)) {
-    tosServers.push(guildId);
-    saveJSON("tos.json", tosServers);
-  }
-};
-
-const tosMessage = () =>
-  "📜 **TÉRMINOS DE SERVICIO — SOFTI**\n\n" +
-  "Para usar a Softi debes aceptar los TOS:\n" +
-  "👉 https://terminosycondicionesdeserv.jimdofree.com/\n\n" +
-  "💖 Gracias por cuidar de Softi";
-
-// =====================
-// CARGAR COMANDOS
-// =====================
-if (fs.existsSync("cmd.json")) {
-  const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
-  for (const cmd of rawCmds) client.commands.set(cmd.name, cmd);
+    statusData.statuses = [
+        "🐾 Mitty está dando vueltecitas..."
+    ];
 }
 
-// =====================
-// REGISTRAR SLASH COMMANDS
-// =====================
-async function registerSlashCommands() {
-  if (!fs.existsSync("cmd.json")) return;
+if (!Array.isArray(statusData.thinking)) {
+    console.warn(
+        "⚠️ status.json no tiene una lista válida de 'thinking'."
+    );
 
-  const rawCmds = JSON.parse(fs.readFileSync("cmd.json", "utf8"));
-  const slashCommands = rawCmds.map(c => ({
-    name: c.name,
-    description: c.description,
-    options: c.options ?? []
-  }));
-
-  const rest = new REST({ version: "10" }).setToken(TOKEN);
-  await rest.put(Routes.applicationCommands(CLIENT_ID), { body: slashCommands });
-  console.log("✅ Slash commands registrados");
+    statusData.thinking = [
+        "¿En qué estás pensando?"
+    ];
 }
 
-// =====================
-// LONGCAT AI
-// =====================
-async function longcatAI(message, userId) {
-  if (!LONGCAT_API) return "💖";
+// ============================================================
+// LOGIC
+// ============================================================
 
-  const history = memory.get(userId) ?? [];
-  history.push({ role: "user", content: message });
+let logic = {};
 
-  try {
-    const res = await fetch("https://api.longcat.chat/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LONGCAT_API}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "LongCat-Flash-Chat",
-        messages: [
-          { role: "system", content: "Eres Softi 💖. Respondes SIEMPRE en Markdown. Tono kawaii, amable y respetuoso." },
-          ...history
+try {
+    logic = require("./logic.js");
+
+    console.log("✅ logic.js conectado.");
+} catch (error) {
+    console.warn("⚠️ logic.js todavía no está disponible.");
+    console.warn(error.message);
+}
+
+// ============================================================
+// CLIENTE DISCORD
+// ============================================================
+
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
+});
+
+// ============================================================
+// ÍNDICES DE ROTACIÓN
+// ============================================================
+
+let statusIndex = 0;
+let thinkingIndex = 0;
+
+// ============================================================
+// OBTENER ESTADO
+// ============================================================
+
+function getNextStatus() {
+    if (statusData.statuses.length === 0) {
+        return "🐾 Mitty está aquí...";
+    }
+
+    const status = statusData.statuses[statusIndex];
+
+    statusIndex++;
+
+    if (statusIndex >= statusData.statuses.length) {
+        statusIndex = 0;
+    }
+
+    return status;
+}
+
+// ============================================================
+// OBTENER "¿EN QUÉ ESTÁS PENSANDO?"
+// ============================================================
+
+function getNextThinking() {
+    if (statusData.thinking.length === 0) {
+        return "¿En qué estás pensando?";
+    }
+
+    const thinking = statusData.thinking[thinkingIndex];
+
+    thinkingIndex++;
+
+    if (thinkingIndex >= statusData.thinking.length) {
+        thinkingIndex = 0;
+    }
+
+    return thinking;
+}
+
+// ============================================================
+// ESTADO DE MITTY
+// ============================================================
+
+function updateStatus() {
+    if (!client.user) return;
+
+    const status = getNextStatus();
+
+    client.user.setPresence({
+        status: "online",
+
+        activities: [
+            {
+                name: "Mitty",
+                type: ActivityType.Custom,
+                state: status
+            }
         ]
-      })
     });
 
-    const data = await res.json();
-    const reply = data?.choices?.[0]?.message?.content ?? "💖";
-    history.push({ role: "assistant", content: reply });
-    memory.set(userId, history.slice(-10));
-    return reply;
-  } catch (e) {
-    console.error("❌ Error LongCat AI:", e);
-    return "💖";
-  }
+    console.log(`🐾 Estado: ${status}`);
 }
 
-// =====================
-// INTERACCIONES
-// =====================
-client.on(Events.InteractionCreate, async interaction => {
-  if (interaction.isButton()) {
-    if (interaction.customId === "aceptar_tos_server") {
-      aceptarTOSServidor(interaction.guildId);
-      return interaction.update({ content: "✅ TOS aceptados — Softi activada 💖", components: [] });
+// ============================================================
+// RECARGAR STATUS.JSON
+// ============================================================
+//
+// Esto permite modificar status.json mientras el bot está
+// funcionando. No hace falta reiniciar Mitty.
+//
+
+function reloadStatus() {
+    statusData = loadJSON(STATUS_PATH, {
+        statuses: [
+            "🐾 Mitty está aquí..."
+        ],
+
+        thinking: [
+            "¿En qué estás pensando?"
+        ]
+    });
+
+    if (!Array.isArray(statusData.statuses)) {
+        statusData.statuses = [
+            "🐾 Mitty está aquí..."
+        ];
     }
 
-    if (interaction.customId === "aceptar_tos_dm") {
-      tosUsersDM.add(interaction.user.id);
-      return interaction.update({ content: "✅ TOS aceptados en MD 💖", components: [] });
+    if (!Array.isArray(statusData.thinking)) {
+        statusData.thinking = [
+            "¿En qué estás pensando?"
+        ];
     }
-  }
 
-  if (!interaction.isChatInputCommand()) return;
-  if (interaction.guildId && !tosServers.includes(interaction.guildId)) {
-    return interaction.reply({ content: tosMessage(), ephemeral: true });
-  }
+    console.log("🔄 status.json recargado.");
+}
 
-  const cmd = client.commands.get(interaction.commandName);
-  if (!cmd) return;
-
-  let reply = cmd.reply ?? "✨";
-  reply = reply.replaceAll("{user}", `<@${interaction.user.id}>`);
-
-  interaction.reply({ content: reply, allowedMentions: { parse: [] } });
-});
-
-// =====================
+// ============================================================
 // MENSAJES
-// =====================
-client.on(Events.MessageCreate, async msg => {
-  if (msg.author.bot) return;
+// ============================================================
 
-  if (!msg.guild) {
-    if (!tosUsersDM.has(msg.author.id)) {
-      const boton = new ButtonBuilder().setCustomId("aceptar_tos_dm").setLabel("Aceptar TOS").setStyle(ButtonStyle.Success);
-      return msg.reply({ content: tosMessage(), components: [new ActionRowBuilder().addComponents(boton)], allowedMentions: { parse: [] } });
+client.on(Events.MessageCreate, async (message) => {
+    try {
+        if (message.author.bot) return;
+
+        const content = message.content.trim();
+
+        // Mitty solamente procesa mensajes con m;
+        if (!content.toLowerCase().startsWith(PREFIX)) {
+            return;
+        }
+
+        const commandContent = content
+            .slice(PREFIX.length)
+            .trim();
+
+        if (!commandContent) return;
+
+        const args = commandContent.split(/\s+/);
+
+        const commandName = args
+            .shift()
+            .toLowerCase();
+
+        console.log(
+            `🐾 ${message.author.tag} → ${PREFIX}${commandName}`
+        );
+
+        // ====================================================
+        // HELP
+        // ====================================================
+
+        if (commandName === "help") {
+
+            if (typeof logic.handleHelp === "function") {
+
+                return await logic.handleHelp(
+                    message,
+                    commands,
+                    PREFIX
+                );
+            }
+
+            return message.reply(
+                "🐾 Mi sistema de ayuda todavía está despertando... 💗"
+            );
+        }
+
+        // ====================================================
+        // RELOAD STATUS
+        // ====================================================
+
+        // Solo para el dueño del bot.
+        if (
+            commandName === "reloadstatus" &&
+            message.author.id === OWNER_ID
+        ) {
+
+            reloadStatus();
+
+            return message.reply(
+                "✨ ¡Listo! Recargué `status.json`."
+            );
+        }
+
+        // ====================================================
+        // LOGIC.JS
+        // ====================================================
+
+        if (typeof logic.handleCommand === "function") {
+
+            return await logic.handleCommand({
+                message,
+                commandName,
+                args,
+
+                commands,
+                gifs,
+                config,
+
+                prefix: PREFIX,
+                ownerId: OWNER_ID,
+
+                getNextStatus,
+                getNextThinking,
+                reloadStatus
+            });
+        }
+
+        // ====================================================
+        // COMANDO DESCONOCIDO
+        // ====================================================
+
+        return message.reply(
+            `🐾 No conozco \`${PREFIX}${commandName}\`... ` +
+            `Prueba \`${PREFIX}help\`. ✨`
+        );
+
+    } catch (error) {
+
+        console.error(
+            "❌ Error procesando mensaje:",
+            error
+        );
+
+        if (!message.replied && !message.deferred) {
+
+            await message.reply(
+                "🐾 A-ah... algo salió mal. Dame un momentito... 💦"
+            ).catch(() => {});
+        }
     }
-
-    const reply = await longcatAI(msg.content, msg.author.id);
-    return msg.reply({ content: `💬 **Softi dice:**\n\n${reply}`, allowedMentions: { parse: [] } });
-  }
-
-  if (!tosServers.includes(msg.guild.id)) return;
-
-  const reply = await longcatAI(msg.content, msg.author.id);
-  msg.reply({ content: `💬 Softi dice:\n\n${reply}`, allowedMentions: { parse: [] } });
 });
 
-// =====================
-// BIENVENIDA / DESPEDIDA (SAFE)
-// =====================
-client.on(Events.GuildMemberAdd, async member => {
-  const cfg = welcomeData[member.guild.id];
-  if (!cfg?.welcome) return;
+// ============================================================
+// BOT LISTO
+// ============================================================
 
-  const canal = await member.guild.channels.fetch(cfg.welcome).catch(() => null);
-  if (!canal) return;
+client.once(
+    Events.ClientReady,
+    (readyClient) => {
 
-  canal.send({
-    content: `🌸 **Nuevo miembro**\nHola ${member.user.username}! 💖\nBienvenido a **${member.guild.name}** ✨`,
-    allowedMentions: { parse: [] }
-  });
+        console.log("");
+        console.log("========================================");
+        console.log("🐾 MITTY ESTÁ DESPIERTO");
+        console.log("========================================");
+
+        console.log(
+            `💗 Usuario: ${readyClient.user.tag}`
+        );
+
+        console.log(
+            `🌸 Servidores: ${readyClient.guilds.cache.size}`
+        );
+
+        console.log(
+            `✨ Prefix: ${PREFIX}`
+        );
+
+        console.log(
+            `📝 Estados cargados: ${statusData.statuses.length}`
+        );
+
+        console.log(
+            `💭 Pensamientos cargados: ${statusData.thinking.length}`
+        );
+
+        console.log("========================================");
+        console.log("");
+
+        // Estado inicial
+        updateStatus();
+
+        // Cambiar estado cada 30 segundos
+        setInterval(
+            updateStatus,
+            30 * 1000
+        );
+    }
+);
+
+// ============================================================
+// SERVIDOR WEB
+// ============================================================
+
+const app = express();
+
+app.get("/", (req, res) => {
+
+    res.send(
+        "🐾 Mitty está despierto y haciendo cositas. 💗"
+    );
 });
 
-client.on(Events.GuildMemberRemove, async member => {
-  const cfg = welcomeData[member.guild.id];
-  if (!cfg?.bye) return;
+app.listen(PORT, () => {
 
-  const canal = await member.guild.channels.fetch(cfg.bye).catch(() => null);
-  if (!canal) return;
-
-  canal.send({
-    content: `🕊️ **Despedida**\n${member.user.username} ha salido de **${member.guild.name}** 💞`,
-    allowedMentions: { parse: [] }
-  });
+    console.log(
+        `🌐 Servidor web activo en el puerto ${PORT}`
+    );
 });
 
-// =====================
-// READY
-// =====================
-client.once(Events.ClientReady, async () => {
-  console.log(`🦊 Softi conectada como ${client.user.tag}`);
-  console.log("✅ Intents:", client.options.intents.toArray());
-  await registerSlashCommands();
-});
-
-// =====================
-// KEEP ALIVE
-// =====================
-http.createServer((_, res) => {
-  res.writeHead(200);
-  res.end("Softi viva 💖");
-}).listen(process.env.PORT || 3000);
+// ============================================================
+// LOGIN
+// ============================================================
 
 client.login(TOKEN);
