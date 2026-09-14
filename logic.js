@@ -1,423 +1,606 @@
 import {
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle
 } from "discord.js";
+
+// ============================================================
+// CONFIGURACIÓN GIPHY
+// ============================================================
 
 const GIF_TOKEN = process.env.GIF_TOKEN;
 
-const GIF_SEARCHES = {
-  Hug: "anime hug",
-  Pat: "anime pat",
-  Boop: "anime boop",
-  Cuddle: "anime cuddle",
-  Poke: "anime poke",
-  Meow: "anime meow"
+const GIF_TAGS = {
+    Hug: "anime hug",
+    Pat: "anime pat",
+    Boop: "anime boop",
+    Cuddle: "anime cuddle",
+    Poke: "anime poke",
+    Meow: "anime meow"
 };
 
-/* =========================
-   GIPHY
-========================= */
+const BUTTON_TIMEOUT = 120000;
 
-async function getRandomGif(category) {
-  if (!GIF_TOKEN) {
-    console.error("[MITTY] Falta GIF_TOKEN.");
-    return null;
-  }
+// ============================================================
+// OBTENER GIF DE GIPHY
+// ============================================================
 
-  const query = GIF_SEARCHES[category];
+export async function getRandomGif(category) {
+    try {
+        if (!GIF_TOKEN) {
+            console.error("[MITTY] ❌ Falta GIF_TOKEN.");
+            return null;
+        }
 
-  if (!query) {
-    console.error(`[MITTY] Categoría GIPHY desconocida: ${category}`);
-    return null;
-  }
+        const tag = GIF_TAGS[category];
 
-  try {
-    const params = new URLSearchParams({
-      api_key: GIF_TOKEN,
-      q: query,
-      limit: "20",
-      rating: "g"
-    });
+        if (!tag) {
+            console.error(
+                `[MITTY] ❌ No existe búsqueda GIPHY para: ${category}`
+            );
+            return null;
+        }
 
-    const response = await fetch(
-      `https://api.giphy.com/v1/gifs/search?${params}`
-    );
+        const params = new URLSearchParams({
+            api_key: GIF_TOKEN,
+            tag,
+            rating: "g"
+        });
 
-    if (!response.ok) {
-      console.error(
-        `[MITTY] GIPHY respondió ${response.status}: ${response.statusText}`
-      );
-      return null;
+        const url =
+            `https://api.giphy.com/v1/gifs/random?${params.toString()}`;
+
+        console.log(`[MITTY] 🔎 Buscando GIF: ${tag}`);
+
+        const response = await fetch(url, {
+            signal: AbortSignal.timeout(10000),
+            headers: {
+                "User-Agent": "Mitty Discord Bot/1.0"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(
+                `GIPHY respondió ${response.status} ${response.statusText}`
+            );
+        }
+
+        const data = await response.json();
+
+        const gifUrl =
+            data?.data?.images?.original?.url;
+
+        if (!gifUrl) {
+            throw new Error(
+                "GIPHY no devolvió una URL de GIF."
+            );
+        }
+
+        console.log(
+            `[MITTY] ✅ GIF encontrado para ${category}`
+        );
+
+        return gifUrl;
+
+    } catch (error) {
+        console.error(
+            `[MITTY] ❌ Error obteniendo GIF (${category}):`,
+            error
+        );
+
+        return null;
     }
-
-    const data = await response.json();
-
-    const gifs = (data.data || [])
-      .map(gif => gif?.images?.original?.url)
-      .filter(Boolean);
-
-    if (!gifs.length) {
-      console.error(`[MITTY] GIPHY no encontró GIFs para "${query}".`);
-      return null;
-    }
-
-    return gifs[Math.floor(Math.random() * gifs.length)];
-
-  } catch (error) {
-    console.error("[MITTY] Error consultando GIPHY:", error);
-    return null;
-  }
 }
 
-/* =========================
-   UTILIDADES
-========================= */
+// ============================================================
+// OBTENER USUARIO DEL MENSAJE RESPONDIDO
+// ============================================================
 
 async function getTargetFromReply(message) {
-  if (!message.reference?.messageId) {
-    return null;
-  }
+    try {
+        if (!message.reference?.messageId) {
+            return null;
+        }
 
-  try {
-    const referenced = await message.fetchReference();
-    return referenced.author;
-  } catch {
-    return null;
-  }
+        const referencedMessage =
+            await message.fetchReference();
+
+        if (!referencedMessage?.author) {
+            return null;
+        }
+
+        return referencedMessage.author;
+
+    } catch (error) {
+        console.error(
+            "[MITTY] ❌ No pude obtener el mensaje respondido:",
+            error
+        );
+
+        return null;
+    }
 }
 
-function getButtonEmoji(category) {
-  const emojis = {
-    Hug: "🤗",
-    Pat: "🥰",
-    Boop: "👉",
-    Cuddle: "🫂",
-    Poke: "👉",
-    Meow: "🐱"
-  };
-
-  return emojis[category] || "💞";
-}
-
-async function sendInteraction({
-  message,
-  category,
-  actionText,
-  buttonText
-}) {
-  const target = await getTargetFromReply(message);
-
-  if (!target) {
-    await message.reply(
-      "Debes responder al mensaje de alguien para usar este comando."
-    );
-    return;
-  }
-
-  const gif = await getRandomGif(category);
-
-  if (!gif) {
-    await message.reply(
-      "No pude conseguir un GIF en este momento. Inténtalo de nuevo."
-    );
-    return;
-  }
-
-  const embed = new EmbedBuilder()
-    .setDescription(
-      `${message.author} ${actionText} ${target}!`
-    )
-    .setImage(gif);
-
-  const button = new ButtonBuilder()
-    .setCustomId(`mitty_${category.toLowerCase()}_${target.id}`)
-    .setLabel(buttonText)
-    .setEmoji(getButtonEmoji(category))
-    .setStyle(ButtonStyle.Primary);
-
-  const row = new ActionRowBuilder()
-    .addComponents(button);
-
-  await message.reply({
-    embeds: [embed],
-    components: [row]
-  });
-}
-
-/* =========================
-   COMANDOS BÁSICOS
-========================= */
+// ============================================================
+// PING
+// ============================================================
 
 async function ping(message) {
-  await message.reply(`🏓 Pong! ${message.client.ws.ping}ms`);
-}
+    const sent = await message.reply("🏓 Calculando...");
 
-async function help(message, commands, prefix) {
-  const embed = new EmbedBuilder()
-    .setTitle("📖 Ayuda de Mitty")
-    .setDescription(
-      `Usa \`${prefix}comando\` para ejecutar un comando.`
+    const latency =
+        sent.createdTimestamp -
+        message.createdTimestamp;
+
+    const websocket =
+        message.client.ws.ping;
+
+    await sent.edit(
+        `🏓 **Pong!**\n` +
+        `💗 Latencia: **${latency}ms**\n` +
+        `📡 WebSocket: **${websocket}ms**`
     );
+}
 
-  if (Array.isArray(commands)) {
+// ============================================================
+// HELP
+// ============================================================
+
+async function help(message, commands) {
+    const embed = new EmbedBuilder()
+        .setColor(0xffb6d9)
+        .setTitle("🌸 Comandos de Mitty")
+        .setDescription(
+            "¡Holaaa! Estos son los comandos que puedes usar conmigo 💕"
+        )
+        .setFooter({
+            text: "Mitty está aquí para ayudarte~"
+        });
+
+    for (const [name, info] of Object.entries(commands || {})) {
+        embed.addFields({
+            name: `m;${name}`,
+            value:
+                `${info.description || "Sin descripción."}\n` +
+                `Categoría: ${info.category || "general"}`,
+            inline: false
+        });
+    }
+
     embed.addFields({
-      name: "Comandos",
-      value: commands
-        .map(command => `\`${command}\``)
-        .join(", ")
-        .slice(0, 1024)
-    });
-  } else if (commands && typeof commands === "object") {
-    const names = Object.keys(commands);
-
-    if (names.length) {
-      embed.addFields({
-        name: "Comandos",
-        value: names
-          .map(command => `\`${command}\``)
-          .join(", ")
-          .slice(0, 1024)
-      });
-    }
-  }
-
-  await message.reply({ embeds: [embed] });
-}
-
-/* =========================
-   INTERACCIONES
-========================= */
-
-async function hug(message) {
-  await sendInteraction({
-    message,
-    category: "Hug",
-    actionText: "le dio un abrazo a",
-    buttonText: "Devolver un abrazo"
-  });
-}
-
-async function pat(message) {
-  await sendInteraction({
-    message,
-    category: "Pat",
-    actionText: "le dio palmaditas a",
-    buttonText: "Devolver palmaditas"
-  });
-}
-
-async function boop(message) {
-  await sendInteraction({
-    message,
-    category: "Boop",
-    actionText: "le hizo boop a",
-    buttonText: "Devolver boop"
-  });
-}
-
-async function cuddle(message) {
-  await sendInteraction({
-    message,
-    category: "Cuddle",
-    actionText: "se acurrucó con",
-    buttonText: "Devolver acurrucón"
-  });
-}
-
-async function poke(message) {
-  await sendInteraction({
-    message,
-    category: "Poke",
-    actionText: "le hizo poke a",
-    buttonText: "Devolver poke"
-  });
-}
-
-async function meow(message) {
-  await sendInteraction({
-    message,
-    category: "Meow",
-    actionText: "le maulló a",
-    buttonText: "Devolver maullido"
-  });
-}
-
-/* =========================
-   BOTONES
-========================= */
-
-async function handleButton(interaction) {
-  if (!interaction.isButton()) {
-    return false;
-  }
-
-  if (!interaction.customId.startsWith("mitty_")) {
-    return false;
-  }
-
-  const parts = interaction.customId.split("_");
-
-  const category = parts[1];
-  const targetId = parts[2];
-
-  /*
-   * Solo la persona mencionada originalmente
-   * puede utilizar el botón.
-   */
-  if (interaction.user.id !== targetId) {
-    await interaction.reply({
-      content: "💭 Ese botón no es para ti.",
-      ephemeral: true
+        name: "💗 Interacciones",
+        value:
+            "`m;hug` · `m;pat` · `m;boop`\n" +
+            "`m;cuddle` · `m;poke` · `m;meow`\n\n" +
+            "💡 Responde al mensaje de alguien y escribe el comando.",
+        inline: false
     });
 
-    return true;
-  }
-
-  const categoryMap = {
-    hug: "Hug",
-    pat: "Pat",
-    boop: "Boop",
-    cuddle: "Cuddle",
-    poke: "Poke",
-    meow: "Meow"
-  };
-
-  const realCategory = categoryMap[category];
-
-  if (!realCategory) {
-    await interaction.reply({
-      content: "❌ Interacción desconocida.",
-      ephemeral: true
+    await message.reply({
+        embeds: [embed]
     });
-
-    return true;
-  }
-
-  const gif = await getRandomGif(realCategory);
-
-  if (!gif) {
-    await interaction.reply({
-      content: "No pude conseguir otro GIF ahora mismo.",
-      ephemeral: true
-    });
-
-    return true;
-  }
-
-  const actionText = {
-    Hug: `${interaction.user} devolvió el abrazo a`,
-    Pat: `${interaction.user} devolvió las palmaditas a`,
-    Boop: `${interaction.user} devolvió el boop a`,
-    Cuddle: `${interaction.user} devolvió el acurrucón a`,
-    Poke: `${interaction.user} devolvió el poke a`,
-    Meow: `${interaction.user} devolvió el maullido a`
-  };
-
-  const originalUser = interaction.message.mentions.users.first();
-
-  const embed = new EmbedBuilder()
-    .setDescription(
-      originalUser
-        ? `${actionText[realCategory]} ${originalUser}!`
-        : `${interaction.user} devolvió la interacción!`
-    )
-    .setImage(gif);
-
-  await interaction.update({
-    embeds: [embed],
-    components: []
-  });
-
-  return true;
 }
 
-/* =========================
-   HANDLER PRINCIPAL
-========================= */
+// ============================================================
+// EMOJIS
+// ============================================================
 
-export async function handleCommand({
-  message,
-  commandName,
-  args,
-  commands,
-  gifs,
-  config,
-  prefix,
-  ownerId,
-  getNextStatus,
-  getNextThinking,
-  reloadStatus
+function getButtonEmoji(category) {
+    const emojis = {
+        Hug: "🤗",
+        Pat: "🫳",
+        Boop: "👉",
+        Cuddle: "🫂",
+        Poke: "👉",
+        Meow: "🐱"
+    };
+
+    return emojis[category] || "💗";
+}
+
+// ============================================================
+// INTERACCIÓN GENERAL
+// ============================================================
+
+async function interaction({
+    message,
+    target,
+    category,
+    actionText
 }) {
-  try {
-    /*
-     * Los botones no pasan por el sistema
-     * normal de comandos.
-     */
-    if (message.author.bot) {
-      return;
-    }
+    if (target.id === message.author.id) {
+        await message.reply(
+            "🌸 ¡No puedes hacerme eso a ti mismo! " +
+            "Responde al mensaje de otra persona 💕"
+        );
 
-    const command = commandName.toLowerCase();
-
-    switch (command) {
-      case "ping":
-        return await ping(message);
-
-      case "help":
-      case "ayuda":
-        return await help(message, commands, prefix);
-
-      case "hug":
-      case "abrazo":
-        return await hug(message);
-
-      case "pat":
-      case "palmaditas":
-        return await pat(message);
-
-      case "boop":
-        return await boop(message);
-
-      case "cuddle":
-      case "acurrucon":
-      case "acurrucón":
-        return await cuddle(message);
-
-      case "poke":
-        return await poke(message);
-
-      case "meow":
-      case "miau":
-        return await meow(message);
-
-      default:
         return;
     }
 
-  } catch (error) {
-    console.error("[MITTY] Error ejecutando comando:", error);
+    const gif = await getRandomGif(category);
 
-    try {
-      await message.reply(
-        "❌ Ocurrió un error al ejecutar ese comando."
-      );
-    } catch {}
-  }
+    const embed = new EmbedBuilder()
+        .setColor(0xffb6d9)
+        .setDescription(
+            `💗 ${message.author} le hizo **${actionText}** a ${target}!`
+        )
+        .setFooter({
+            text: "— Mitty 💕"
+        })
+        .setTimestamp();
+
+    if (gif) {
+        embed.setImage(gif);
+    }
+
+    const customId =
+        `mitty_return_${category}_${message.author.id}_${target.id}`;
+
+    const button = new ButtonBuilder()
+        .setCustomId(customId)
+        .setLabel(`Devolver ${actionText}`)
+        .setEmoji(getButtonEmoji(category))
+        .setStyle(ButtonStyle.Secondary);
+
+    const row = new ActionRowBuilder()
+        .addComponents(button);
+
+    const sentMessage =
+        await message.channel.send({
+            embeds: [embed],
+            components: [row],
+            allowedMentions: {
+                users: [
+                    message.author.id,
+                    target.id
+                ]
+            }
+        });
+
+    // Desactivar automáticamente después de 2 minutos.
+    setTimeout(async () => {
+        try {
+            const disabledButton =
+                new ButtonBuilder()
+                    .setCustomId(
+                        `mitty_expired_${Date.now()}`
+                    )
+                    .setLabel(`Devolver ${actionText}`)
+                    .setEmoji(getButtonEmoji(category))
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(true);
+
+            const disabledRow =
+                new ActionRowBuilder()
+                    .addComponents(disabledButton);
+
+            await sentMessage.edit({
+                components: [disabledRow]
+            });
+
+        } catch (error) {
+            console.error(
+                "[MITTY] ❌ No pude desactivar el botón:",
+                error
+            );
+        }
+    }, BUTTON_TIMEOUT);
 }
 
-/* =========================
-   EXPORTACIONES
-========================= */
+// ============================================================
+// HUG
+// ============================================================
+
+async function hug(message) {
+    const target =
+        await getTargetFromReply(message);
+
+    if (!target) {
+        await message.reply(
+            "🤗 Responde al mensaje de alguien y escribe " +
+            "`m;hug` para darle un abrazo."
+        );
+
+        return;
+    }
+
+    await interaction({
+        message,
+        target,
+        category: "Hug",
+        actionText: "un abrazo"
+    });
+}
+
+// ============================================================
+// PAT
+// ============================================================
+
+async function pat(message) {
+    const target =
+        await getTargetFromReply(message);
+
+    if (!target) {
+        await message.reply(
+            "🫳 Responde al mensaje de alguien y escribe " +
+            "`m;pat` para darle unas palmaditas."
+        );
+
+        return;
+    }
+
+    await interaction({
+        message,
+        target,
+        category: "Pat",
+        actionText: "unas palmaditas"
+    });
+}
+
+// ============================================================
+// BOOP
+// ============================================================
+
+async function boop(message) {
+    const target =
+        await getTargetFromReply(message);
+
+    if (!target) {
+        await message.reply(
+            "👉 Responde al mensaje de alguien y escribe " +
+            "`m;boop` para darle un boop."
+        );
+
+        return;
+    }
+
+    await interaction({
+        message,
+        target,
+        category: "Boop",
+        actionText: "un boop"
+    });
+}
+
+// ============================================================
+// CUDDLE
+// ============================================================
+
+async function cuddle(message) {
+    const target =
+        await getTargetFromReply(message);
+
+    if (!target) {
+        await message.reply(
+            "🫂 Responde al mensaje de alguien y escribe " +
+            "`m;cuddle` para acurrucarte."
+        );
+
+        return;
+    }
+
+    await interaction({
+        message,
+        target,
+        category: "Cuddle",
+        actionText: "un acurrucón"
+    });
+}
+
+// ============================================================
+// POKE
+// ============================================================
+
+async function poke(message) {
+    const target =
+        await getTargetFromReply(message);
+
+    if (!target) {
+        await message.reply(
+            "👉 Responde al mensaje de alguien y escribe " +
+            "`m;poke` para darle un pequeño poke."
+        );
+
+        return;
+    }
+
+    await interaction({
+        message,
+        target,
+        category: "Poke",
+        actionText: "un poke"
+    });
+}
+
+// ============================================================
+// MEOW
+// ============================================================
+
+async function meow(message) {
+    const target =
+        await getTargetFromReply(message);
+
+    if (!target) {
+        await message.reply(
+            "🐱 Responde al mensaje de alguien y escribe " +
+            "`m;meow` para maullarle."
+        );
+
+        return;
+    }
+
+    await interaction({
+        message,
+        target,
+        category: "Meow",
+        actionText: "un maullido"
+    });
+}
+
+// ============================================================
+// MANEJAR BOTONES
+// ============================================================
+
+export async function handleButton(buttonInteraction) {
+    const id = buttonInteraction.customId;
+
+    if (!id.startsWith("mitty_return_")) {
+        return;
+    }
+
+    const parts = id.split("_");
+
+    // mitty_return_CATEGORY_AUTHOR_ID_TARGET_ID
+    if (parts.length < 5) {
+        return;
+    }
+
+    const category = parts[2];
+    const authorId = parts[3];
+    const targetId = parts[4];
+
+    // Solo la persona objetivo puede devolver la interacción.
+    if (buttonInteraction.user.id !== targetId) {
+        await buttonInteraction.reply({
+            content:
+                "💗 Este botón es solamente para la persona a quien se hizo la interacción.",
+            ephemeral: true
+        });
+
+        return;
+    }
+
+    const gif =
+        await getRandomGif(category);
+
+    const actionNames = {
+        Hug: "un abrazo",
+        Pat: "unas palmaditas",
+        Boop: "un boop",
+        Cuddle: "un acurrucón",
+        Poke: "un poke",
+        Meow: "un maullido"
+    };
+
+    const actionText =
+        actionNames[category] || "una interacción";
+
+    const embed = new EmbedBuilder()
+        .setColor(0xffc1df)
+        .setDescription(
+            `💕 ${buttonInteraction.user} no dudó ni un segundo en ` +
+            `devolverle **${actionText}** a <@${authorId}>!`
+        )
+        .setFooter({
+            text: "— Mitty 💕"
+        })
+        .setTimestamp();
+
+    if (gif) {
+        embed.setImage(gif);
+    }
+
+    await buttonInteraction.update({
+        embeds: [embed],
+        components: []
+    });
+}
+
+// ============================================================
+// COMANDOS
+// ============================================================
+
+const commandHandlers = {
+    ping,
+    help,
+    hug,
+    pat,
+    boop,
+    cuddle,
+    poke,
+    meow
+};
+
+// ============================================================
+// EJECUTAR COMANDO
+// ============================================================
+
+export async function handleCommand({
+    message,
+    commandName,
+    args,
+    commands,
+    gifs,
+    config,
+    prefix,
+    ownerId,
+    getNextStatus,
+    getNextThinking,
+    reloadStatus
+}) {
+    const command =
+        String(commandName || "").toLowerCase();
+
+    const handler =
+        commandHandlers[command];
+
+    if (!handler) {
+        return false;
+    }
+
+    try {
+        await handler(
+            message,
+            commands,
+            args,
+            {
+                gifs,
+                config,
+                prefix,
+                ownerId,
+                getNextStatus,
+                getNextThinking,
+                reloadStatus
+            }
+        );
+
+        return true;
+
+    } catch (error) {
+        console.error(
+            `[MITTY] ❌ Error ejecutando m;${command}:`,
+            error
+        );
+
+        try {
+            await message.reply(
+                "💔 Oops... algo salió mal. " +
+                "Inténtalo de nuevo."
+            );
+        } catch (replyError) {
+            console.error(
+                "[MITTY] ❌ También falló el mensaje de error:",
+                replyError
+            );
+        }
+
+        return false;
+    }
+}
+
+// ============================================================
+// EXPORTACIONES
+// ============================================================
 
 export {
-  getRandomGif,
-  handleButton,
-  hug,
-  pat,
-  boop,
-  cuddle,
-  poke,
-  meow
+    ping,
+    help,
+    hug,
+    pat,
+    boop,
+    cuddle,
+    poke,
+    meow,
+    interaction
 };
