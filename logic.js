@@ -143,12 +143,9 @@ async function handleCommand({
 // EXPORTACIONES
 // ============================================================
 
-module.exports = {
+export {
     handleCommand,
-    handleHelp: help,
-
-    // Exportamos las funciones individualmente por si
-    // necesitamos utilizarlas desde otras partes del bot.
+    handleHelp,
     ping,
     help
 };
