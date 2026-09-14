@@ -1,17 +1,23 @@
-const {
+import {
     Client,
     GatewayIntentBits,
     ActivityType,
     Events
-} = require("discord.js");
+} from "discord.js";
 
-const express = require("express");
-const fs = require("fs");
-const path = require("path");
+import express from "express";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-// ============================================================
+import { handleCommand, handleHelp } from "./logic.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ==============================
 // CONFIGURACIÓN
-// ============================================================
+// ==============================
 
 const TOKEN = process.env.TOKEN;
 const PORT = process.env.PORT || 3000;
@@ -20,109 +26,79 @@ const OWNER_ID = process.env.OWNER_ID;
 const PREFIX = "m;";
 
 if (!TOKEN) {
-    console.error("❌ No se encontró la variable de entorno TOKEN.");
+    console.error("❌ Falta la variable de entorno TOKEN.");
     process.exit(1);
 }
 
-// ============================================================
+// ==============================
 // ARCHIVOS
-// ============================================================
+// ==============================
 
-const BASE_PATH = __dirname;
+function loadJSON(fileName, fallback = {}) {
+    const filePath = path.join(__dirname, fileName);
 
-const CMD_PATH = path.join(BASE_PATH, "cmd.json");
-const GIFS_PATH = path.join(BASE_PATH, "gifs.json");
-const STATUS_PATH = path.join(BASE_PATH, "status.json");
-const CONFIG_PATH = path.join(BASE_PATH, "config.json");
-
-// ============================================================
-// CARGADOR JSON
-// ============================================================
-
-function loadJSON(filePath, fallback = {}) {
     try {
-        if (!fs.existsSync(filePath)) {
-            console.warn(
-                `⚠️ No se encontró ${path.basename(filePath)}`
-            );
-
-            return fallback;
-        }
-
-        const data = fs.readFileSync(filePath, "utf8");
-
-        return JSON.parse(data);
-
+        return JSON.parse(fs.readFileSync(filePath, "utf8"));
     } catch (error) {
-        console.error(
-            `❌ Error leyendo ${path.basename(filePath)}:`,
-            error.message
-        );
-
+        console.error(`❌ No se pudo cargar ${fileName}:`, error);
         return fallback;
     }
 }
 
-// ============================================================
-// DATOS
-// ============================================================
-
-const commands = loadJSON(CMD_PATH, {});
-const gifs = loadJSON(GIFS_PATH, {});
-const config = loadJSON(CONFIG_PATH, {});
-
-let statusData = loadJSON(STATUS_PATH, {
-    statuses: [
-        "🐾 Mitty está dando vueltecitas..."
-    ],
-
-    thinking: [
-        "¿En qué estás pensando?"
-    ]
+const commands = loadJSON("cmd.json", {});
+const gifs = loadJSON("gifs.json", {});
+const config = loadJSON("config.json", {});
+let statusData = loadJSON("status.json", {
+    statuses: [],
+    thinking: []
 });
 
-// ============================================================
-// VALIDACIÓN DE STATUS.JSON
-// ============================================================
+// ==============================
+// ESTADOS
+// ==============================
 
-if (!Array.isArray(statusData.statuses)) {
-    console.warn(
-        "⚠️ status.json no tiene una lista válida de 'statuses'."
-    );
+let statusIndex = 0;
+let thinkingIndex = 0;
 
-    statusData.statuses = [
-        "🐾 Mitty está dando vueltecitas..."
-    ];
+function getNextStatus() {
+    if (!statusData.statuses?.length) {
+        return "🌸 Explorando el Abismo";
+    }
+
+    const status = statusData.statuses[statusIndex];
+
+    statusIndex = (statusIndex + 1) % statusData.statuses.length;
+
+    return status;
 }
 
-if (!Array.isArray(statusData.thinking)) {
-    console.warn(
-        "⚠️ status.json no tiene una lista válida de 'thinking'."
-    );
+function getNextThinking() {
+    if (!statusData.thinking?.length) {
+        return "💭 ¿Qué habrá por aquí?";
+    }
 
-    statusData.thinking = [
-        "¿En qué estás pensando?"
-    ];
+    const thinking = statusData.thinking[thinkingIndex];
+
+    thinkingIndex = (thinkingIndex + 1) % statusData.thinking.length;
+
+    return thinking;
 }
 
-// ============================================================
-// LOGIC
-// ============================================================
+function reloadStatus() {
+    statusData = loadJSON("status.json", {
+        statuses: [],
+        thinking: []
+    });
 
-let logic = {};
+    statusIndex = 0;
+    thinkingIndex = 0;
 
-try {
-    logic = require("./logic.js");
-
-    console.log("✅ logic.js conectado.");
-} catch (error) {
-    console.warn("⚠️ logic.js todavía no está disponible.");
-    console.warn(error.message);
+    console.log("🔄 status.json recargado.");
 }
 
-// ============================================================
-// CLIENTE DISCORD
-// ============================================================
+// ==============================
+// CLIENTE DE DISCORD
+// ==============================
 
 const client = new Client({
     intents: [
@@ -133,297 +109,112 @@ const client = new Client({
     ]
 });
 
-// ============================================================
-// ÍNDICES DE ROTACIÓN
-// ============================================================
+// ==============================
+// BOT LISTO
+// ==============================
 
-let statusIndex = 0;
-let thinkingIndex = 0;
+client.once(Events.ClientReady, (readyClient) => {
+    console.log(`🐾 ¡Mitty está lista como ${readyClient.user.tag}!`);
 
-// ============================================================
-// OBTENER ESTADO
-// ============================================================
-
-function getNextStatus() {
-    if (statusData.statuses.length === 0) {
-        return "🐾 Mitty está aquí...";
-    }
-
-    const status = statusData.statuses[statusIndex];
-
-    statusIndex++;
-
-    if (statusIndex >= statusData.statuses.length) {
-        statusIndex = 0;
-    }
-
-    return status;
-}
-
-// ============================================================
-// OBTENER "¿EN QUÉ ESTÁS PENSANDO?"
-// ============================================================
-
-function getNextThinking() {
-    if (statusData.thinking.length === 0) {
-        return "¿En qué estás pensando?";
-    }
-
-    const thinking = statusData.thinking[thinkingIndex];
-
-    thinkingIndex++;
-
-    if (thinkingIndex >= statusData.thinking.length) {
-        thinkingIndex = 0;
-    }
-
-    return thinking;
-}
-
-// ============================================================
-// ESTADO DE MITTY
-// ============================================================
-
-function updateStatus() {
-    if (!client.user) return;
-
-    const status = getNextStatus();
-
-    client.user.setPresence({
-        status: "online",
-
+    readyClient.user.setPresence({
         activities: [
             {
-                name: "Mitty",
-                type: ActivityType.Custom,
-                state: status
+                name: getNextStatus(),
+                type: ActivityType.Custom
             }
-        ]
-    });
-
-    console.log(`🐾 Estado: ${status}`);
-}
-
-// ============================================================
-// RECARGAR STATUS.JSON
-// ============================================================
-//
-// Esto permite modificar status.json mientras el bot está
-// funcionando. No hace falta reiniciar Mitty.
-//
-
-function reloadStatus() {
-    statusData = loadJSON(STATUS_PATH, {
-        statuses: [
-            "🐾 Mitty está aquí..."
         ],
-
-        thinking: [
-            "¿En qué estás pensando?"
-        ]
+        status: "online"
     });
 
-    if (!Array.isArray(statusData.statuses)) {
-        statusData.statuses = [
-            "🐾 Mitty está aquí..."
-        ];
-    }
+    setInterval(() => {
+        readyClient.user.setPresence({
+            activities: [
+                {
+                    name: getNextStatus(),
+                    type: ActivityType.Custom
+                }
+            ],
+            status: "online"
+        });
+    }, 30000);
+});
 
-    if (!Array.isArray(statusData.thinking)) {
-        statusData.thinking = [
-            "¿En qué estás pensando?"
-        ];
-    }
-
-    console.log("🔄 status.json recargado.");
-}
-
-// ============================================================
+// ==============================
 // MENSAJES
-// ============================================================
+// ==============================
 
 client.on(Events.MessageCreate, async (message) => {
+    if (message.author.bot) return;
+
+    if (!message.content.toLowerCase().startsWith(PREFIX)) return;
+
+    const content = message.content.slice(PREFIX.length).trim();
+
+    if (!content) return;
+
+    const args = content.split(/\s+/);
+    const commandName = args.shift().toLowerCase();
+
     try {
-        if (message.author.bot) return;
-
-        const content = message.content.trim();
-
-        // Mitty solamente procesa mensajes con m;
-        if (!content.toLowerCase().startsWith(PREFIX)) {
-            return;
-        }
-
-        const commandContent = content
-            .slice(PREFIX.length)
-            .trim();
-
-        if (!commandContent) return;
-
-        const args = commandContent.split(/\s+/);
-
-        const commandName = args
-            .shift()
-            .toLowerCase();
-
-        console.log(
-            `🐾 ${message.author.tag} → ${PREFIX}${commandName}`
-        );
-
-        // ====================================================
-        // HELP
-        // ====================================================
-
         if (commandName === "help") {
-
-            if (typeof logic.handleHelp === "function") {
-
-                return await logic.handleHelp(
-                    message,
-                    commands,
-                    PREFIX
-                );
-            }
-
-            return message.reply(
-                "🐾 Mi sistema de ayuda todavía está despertando... 💗"
+            return await handleHelp(
+                message,
+                commands,
+                PREFIX
             );
         }
 
-        // ====================================================
-        // RELOAD STATUS
-        // ====================================================
-
-        // Solo para el dueño del bot.
-        if (
-            commandName === "reloadstatus" &&
-            message.author.id === OWNER_ID
-        ) {
+        if (commandName === "reloadstatus") {
+            if (message.author.id !== OWNER_ID) {
+                return message.reply("❌ No tienes permiso para hacer eso.");
+            }
 
             reloadStatus();
 
-            return message.reply(
-                "✨ ¡Listo! Recargué `status.json`."
-            );
+            return message.reply("🔄 He recargado mis estados.");
         }
 
-        // ====================================================
-        // LOGIC.JS
-        // ====================================================
-
-        if (typeof logic.handleCommand === "function") {
-
-            return await logic.handleCommand({
-                message,
-                commandName,
-                args,
-
-                commands,
-                gifs,
-                config,
-
-                prefix: PREFIX,
-                ownerId: OWNER_ID,
-
-                getNextStatus,
-                getNextThinking,
-                reloadStatus
-            });
-        }
-
-        // ====================================================
-        // COMANDO DESCONOCIDO
-        // ====================================================
-
-        return message.reply(
-            `🐾 No conozco \`${PREFIX}${commandName}\`... ` +
-            `Prueba \`${PREFIX}help\`. ✨`
-        );
+        await handleCommand({
+            message,
+            commandName,
+            args,
+            commands,
+            gifs,
+            config,
+            prefix: PREFIX,
+            ownerId: OWNER_ID,
+            getNextStatus,
+            getNextThinking,
+            reloadStatus
+        });
 
     } catch (error) {
+        console.error(`❌ Error ejecutando ${commandName}:`, error);
 
-        console.error(
-            "❌ Error procesando mensaje:",
-            error
-        );
+        if (!message.replied && !message.channel) return;
 
-        if (!message.replied && !message.deferred) {
-
-            await message.reply(
-                "🐾 A-ah... algo salió mal. Dame un momentito... 💦"
-            ).catch(() => {});
-        }
+        await message.reply(
+            "🐾 ¡Ay! Algo salió mal mientras intentaba hacer eso."
+        ).catch(() => {});
     }
 });
 
-// ============================================================
-// BOT LISTO
-// ============================================================
-
-client.once(
-    Events.ClientReady,
-    (readyClient) => {
-
-        console.log("");
-        console.log("========================================");
-        console.log("🐾 MITTY ESTÁ DESPIERTO");
-        console.log("========================================");
-
-        console.log(
-            `💗 Usuario: ${readyClient.user.tag}`
-        );
-
-        console.log(
-            `🌸 Servidores: ${readyClient.guilds.cache.size}`
-        );
-
-        console.log(
-            `✨ Prefix: ${PREFIX}`
-        );
-
-        console.log(
-            `📝 Estados cargados: ${statusData.statuses.length}`
-        );
-
-        console.log(
-            `💭 Pensamientos cargados: ${statusData.thinking.length}`
-        );
-
-        console.log("========================================");
-        console.log("");
-
-        // Estado inicial
-        updateStatus();
-
-        // Cambiar estado cada 30 segundos
-        setInterval(
-            updateStatus,
-            30 * 1000
-        );
-    }
-);
-
-// ============================================================
+// ==============================
 // SERVIDOR WEB
-// ============================================================
+// ==============================
 
 const app = express();
 
 app.get("/", (req, res) => {
-
-    res.send(
-        "🐾 Mitty está despierto y haciendo cositas. 💗"
-    );
+    res.send("🐾 Mitty está en línea.");
 });
 
 app.listen(PORT, () => {
-
-    console.log(
-        `🌐 Servidor web activo en el puerto ${PORT}`
-    );
+    console.log(`🌐 Servidor activo en el puerto ${PORT}.`);
 });
 
-// ============================================================
+// ==============================
 // LOGIN
-// ============================================================
+// ==============================
 
 client.login(TOKEN);
