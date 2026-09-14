@@ -348,6 +348,38 @@ app.listen(PORT, () => {
 });
 
 /* =========================================================
+   KEEP ALIVE
+   Mantiene activo el servidor HTTP de Mitty
+========================================================= */
+
+const KEEP_ALIVE_INTERVAL = 5 * 60 * 1000; // 5 minutos
+
+setInterval(async () => {
+    try {
+        const response = await fetch(
+            `http://127.0.0.1:${PORT}/`
+        );
+
+        if (response.ok) {
+            console.log(
+                "[MITTY] 💓 Keep-alive: servidor activo."
+            );
+        } else {
+            console.warn(
+                `[MITTY] ⚠️ Keep-alive respondió ${response.status}.`
+            );
+        }
+
+    } catch (error) {
+        console.error(
+            "[MITTY] ❌ Error en keep-alive:",
+            error.message
+        );
+    }
+
+}, KEEP_ALIVE_INTERVAL);
+
+/* =========================================================
    LOGIN
 ========================================================= */
 
