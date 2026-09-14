@@ -1,8 +1,8 @@
 import {
-    Client,
-    GatewayIntentBits,
-    ActivityType,
-    Events
+  Client,
+  GatewayIntentBits,
+  ActivityType,
+  Events
 } from "discord.js";
 
 import express from "express";
@@ -10,14 +10,15 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { handleCommand } from "./logic.js";
+import {
+  handleCommand,
+  handleButton
+} from "./logic.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
-// ==============================
-// CONFIGURACIÓN
-// ==============================
+/* =========================
+   CONFIGURACIÓN
+========================= */
 
 const TOKEN = process.env.TOKEN;
 const PORT = process.env.PORT || 3000;
@@ -26,190 +27,214 @@ const OWNER_ID = process.env.OWNER_ID;
 const PREFIX = "m;";
 
 if (!TOKEN) {
-    console.error("❌ Falta la variable de entorno TOKEN.");
-    process.exit(1);
+  console.error("[MITTY] ❌ Falta TOKEN.");
+  process.exit(1);
 }
 
-// ==============================
-// ARCHIVOS
-// ==============================
-
-function loadJSON(fileName, fallback = {}) {
-    const filePath = path.join(__dirname, fileName);
-
-    try {
-        return JSON.parse(fs.readFileSync(filePath, "utf8"));
-    } catch (error) {
-        console.error(`❌ No se pudo cargar ${fileName}:`, error);
-        return fallback;
-    }
+if (!process.env.GIF_TOKEN) {
+  console.error("[MITTY] ⚠️ Falta GIF_TOKEN.");
 }
 
-const commands = loadJSON("cmd.json", {});
-const gifs = loadJSON("gifs.json", {});
-const config = loadJSON("config.json", {});
-let statusData = loadJSON("status.json", {
-    statuses: [],
-    thinking: []
-});
 
-// ==============================
-// ESTADOS
-// ==============================
+/* =========================
+   RUTAS
+========================= */
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+
+/* =========================
+   JSON
+========================= */
+
+function loadJSON(file) {
+  try {
+    return JSON.parse(
+      fs.readFileSync(
+        path.join(__dirname, file),
+        "utf8"
+      )
+    );
+  } catch (error) {
+    console.error(`[MITTY] Error leyendo ${file}:`, error);
+    return {};
+  }
+}
+
+const commands = loadJSON("cmd.json");
+const config = loadJSON("config.json");
+const status = loadJSON("status.json");
+
+
+/* =========================
+   ESTADO
+========================= */
 
 let statusIndex = 0;
 let thinkingIndex = 0;
 
 function getNextStatus() {
-    if (!statusData.statuses?.length) {
-        return "🌸 Explorando el Abismo";
-    }
+  if (!Array.isArray(status.statuses) || !status.statuses.length) {
+    return null;
+  }
 
-    const status = statusData.statuses[statusIndex];
+  const value = status.statuses[statusIndex];
 
-    statusIndex = (statusIndex + 1) % statusData.statuses.length;
+  statusIndex =
+    (statusIndex + 1) % status.statuses.length;
 
-    return status;
+  return value;
 }
 
 function getNextThinking() {
-    if (!statusData.thinking?.length) {
-        return "💭 ¿Qué habrá por aquí?";
-    }
+  if (!Array.isArray(status.thinking) || !status.thinking.length) {
+    return null;
+  }
 
-    const thinking = statusData.thinking[thinkingIndex];
+  const value = status.thinking[thinkingIndex];
 
-    thinkingIndex = (thinkingIndex + 1) % statusData.thinking.length;
+  thinkingIndex =
+    (thinkingIndex + 1) % status.thinking.length;
 
-    return thinking;
+  return value;
 }
 
 function reloadStatus() {
-    statusData = loadJSON("status.json", {
-        statuses: [],
-        thinking: []
-    });
+  const newStatus = loadJSON("status.json");
 
-    statusIndex = 0;
-    thinkingIndex = 0;
+  Object.keys(status).forEach(key => {
+    delete status[key];
+  });
 
-    console.log("🔄 status.json recargado.");
+  Object.assign(status, newStatus);
+
+  statusIndex = 0;
+  thinkingIndex = 0;
 }
 
-// ==============================
-// CLIENTE DE DISCORD
-// ==============================
+
+/* =========================
+   CLIENTE DISCORD
+========================= */
 
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ]
 });
 
-// ==============================
-// BOT LISTO
-// ==============================
 
-client.once(Events.ClientReady, (readyClient) => {
-    console.log(`🐾 ¡Mitty está lista como ${readyClient.user.tag}!`);
+/* =========================
+   BOT LISTO
+========================= */
 
-    readyClient.user.setPresence({
-        activities: [
-            {
-                name: getNextStatus(),
-                type: ActivityType.Custom
-            }
-        ],
-        status: "online"
+client.once(Events.ClientReady, readyClient => {
+  console.log(
+    `[MITTY] ✅ Conectado como ${readyClient.user.tag}`
+  );
+
+  readyClient.user.setActivity("m;help", {
+    type: ActivityType.Listening
+  });
+});
+
+
+/* =========================
+   COMANDOS POR PREFIJO
+========================= */
+
+client.on(Events.MessageCreate, async message => {
+  if (message.author.bot) {
+    return;
+  }
+
+  if (!message.content.startsWith(PREFIX)) {
+    return;
+  }
+
+  const content = message.content.slice(PREFIX.length).trim();
+
+  if (!content) {
+    return;
+  }
+
+  const parts = content.split(/\s+/);
+
+  const commandName = parts.shift().toLowerCase();
+
+  const args = parts;
+
+  try {
+    await handleCommand({
+      message,
+      commandName,
+      args,
+      commands,
+      gifs: {},
+      config,
+      prefix: PREFIX,
+      ownerId: OWNER_ID,
+      getNextStatus,
+      getNextThinking,
+      reloadStatus
     });
-
-    setInterval(() => {
-        readyClient.user.setPresence({
-            activities: [
-                {
-                    name: getNextStatus(),
-                    type: ActivityType.Custom
-                }
-            ],
-            status: "online"
-        });
-    }, 30000);
+  } catch (error) {
+    console.error(
+      "[MITTY] Error en MessageCreate:",
+      error
+    );
+  }
 });
 
-// ==============================
-// MENSAJES
-// ==============================
 
-client.on(Events.MessageCreate, async (message) => {
-    if (message.author.bot) return;
+/* =========================
+   BOTONES
+========================= */
 
-    if (!message.content.toLowerCase().startsWith(PREFIX)) return;
+client.on(Events.InteractionCreate, async interaction => {
+  if (!interaction.isButton()) {
+    return;
+  }
 
-    const content = message.content.slice(PREFIX.length).trim();
+  try {
+    await handleButton(interaction);
+  } catch (error) {
+    console.error(
+      "[MITTY] Error manejando botón:",
+      error
+    );
 
-    if (!content) return;
-
-    const args = content.split(/\s+/);
-    const commandName = args.shift().toLowerCase();
-
-    try {
-        
-        if (commandName === "reloadstatus") {
-            if (message.author.id !== OWNER_ID) {
-                return message.reply("❌ No tienes permiso para hacer eso.");
-            }
-
-            reloadStatus();
-
-            return message.reply("🔄 He recargado mis estados.");
-        }
-
-        await handleCommand(
-    message,
-    commandName,
-    args,
-    {
-        commands,
-        gifs,
-        config,
-        prefix: PREFIX,
-        ownerId: OWNER_ID,
-        getNextStatus,
-        getNextThinking,
-        reloadStatus
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({
+        content: "❌ Ocurrió un error con esta interacción.",
+        ephemeral: true
+      }).catch(() => {});
     }
-);
-
-    } catch (error) {
-        console.error(`❌ Error ejecutando ${commandName}:`, error);
-
-        if (!message.replied && !message.channel) return;
-
-        await message.reply(
-            "🐾 ¡Ay! Algo salió mal mientras intentaba hacer eso."
-        ).catch(() => {});
-    }
+  }
 });
 
-// ==============================
-// SERVIDOR WEB
-// ==============================
+
+/* =========================
+   SERVIDOR WEB
+========================= */
 
 const app = express();
 
 app.get("/", (req, res) => {
-    res.send("🐾 Mitty está en línea.");
+  res.send("🤖 Mitty online.");
 });
 
 app.listen(PORT, () => {
-    console.log(`🌐 Servidor activo en el puerto ${PORT}.`);
+  console.log(`[MITTY] 🌐 Puerto ${PORT}`);
 });
 
-// ==============================
-// LOGIN
-// ==============================
+
+/* =========================
+   LOGIN
+========================= */
 
 client.login(TOKEN);
