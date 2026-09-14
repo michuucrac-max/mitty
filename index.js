@@ -167,19 +167,21 @@ client.on(Events.MessageCreate, async (message) => {
             return message.reply("🔄 He recargado mis estados.");
         }
 
-        await handleCommand({
-            message,
-            commandName,
-            args,
-            commands,
-            gifs,
-            config,
-            prefix: PREFIX,
-            ownerId: OWNER_ID,
-            getNextStatus,
-            getNextThinking,
-            reloadStatus
-        });
+        await handleCommand(
+    message,
+    commandName,
+    args,
+    {
+        commands,
+        gifs,
+        config,
+        prefix: PREFIX,
+        ownerId: OWNER_ID,
+        getNextStatus,
+        getNextThinking,
+        reloadStatus
+    }
+);
 
     } catch (error) {
         console.error(`❌ Error ejecutando ${commandName}:`, error);
