@@ -10,7 +10,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { handleCommand, handleHelp } from "./logic.js";
+import { handleCommand } from "./logic.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -156,14 +156,7 @@ client.on(Events.MessageCreate, async (message) => {
     const commandName = args.shift().toLowerCase();
 
     try {
-        if (commandName === "help") {
-            return await handleHelp(
-                message,
-                commands,
-                PREFIX
-            );
-        }
-
+        
         if (commandName === "reloadstatus") {
             if (message.author.id !== OWNER_ID) {
                 return message.reply("❌ No tienes permiso para hacer eso.");
