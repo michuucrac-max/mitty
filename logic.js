@@ -6,32 +6,69 @@ import {
 } from "discord.js";
 
 // ==========================================
-// UTILIDADES
+// OBTENER GIF DESDE LA API
 // ==========================================
 
-function getRandomGif(gifs, category) {
-    const group = gifs?.[category];
+async function getRandomGif(gifs, category) {
+    const api = gifs?.[category]?.api;
 
-    if (!group) return null;
+    if (!api) {
+        console.warn(`⚠️ No existe API para la categoría ${category}.`);
+        return null;
+    }
 
-    const urls = Object.values(group).filter(
-        value => typeof value === "string" && value.length > 0
-    );
+    try {
+        const response = await fetch(api, {
+            headers: {
+                "User-Agent": "Mitty Discord Bot"
+            }
+        });
 
-    if (!urls.length) return null;
+        if (!response.ok) {
+            throw new Error(
+                `API respondió con HTTP ${response.status}`
+            );
+        }
 
-    return urls[Math.floor(Math.random() * urls.length)];
+        const data = await response.json();
+
+        if (!data?.url) {
+            throw new Error("La API no devolvió una URL.");
+        }
+
+        return data.url;
+
+    } catch (error) {
+        console.error(
+            `❌ Error obteniendo GIF de ${category}:`,
+            error
+        );
+
+        return null;
+    }
 }
 
-function getTargetFromReply(message) {
-    // El comando debe ser una respuesta a otro mensaje.
+// ==========================================
+// OBTENER USUARIO DEL MENSAJE RESPONDIDO
+// ==========================================
+
+async function getTargetFromReply(message) {
     if (!message.reference?.messageId) {
         return null;
     }
 
-    return message.fetchReference()
-        .then(repliedMessage => repliedMessage.author)
-        .catch(() => null);
+    try {
+        const repliedMessage = await message.fetchReference();
+
+        return repliedMessage.author;
+    } catch (error) {
+        console.error(
+            "❌ No se pudo obtener el mensaje respondido:",
+            error
+        );
+
+        return null;
+    }
 }
 
 // ==========================================
@@ -39,12 +76,16 @@ function getTargetFromReply(message) {
 // ==========================================
 
 async function ping(message) {
-    const sent = await message.reply("🐾 Calculando mi latencia...");
+    const sent = await message.reply(
+        "🐾 Calculando mi latencia..."
+    );
 
     const messageLatency =
-        sent.createdTimestamp - message.createdTimestamp;
+        sent.createdTimestamp -
+        message.createdTimestamp;
 
-    const websocketLatency = message.client.ws.ping;
+    const websocketLatency =
+        message.client.ws.ping;
 
     await sent.edit(
         `🐾 ¡Pong!\n` +
@@ -62,7 +103,8 @@ async function help(message, commands, prefix) {
         .setTitle("🌸 ¡Holii! Soy Mitty")
         .setDescription(
             "🐾 ¡Aquí están las cosas que puedo hacer!\n\n" +
-            "También tengo algunas sorpresas que puedes descubrir..."
+            "También tengo algunas interacciones que puedes " +
+            "usar respondiendo al mensaje de alguien."
         )
         .setColor(0xffb6d9);
 
@@ -72,7 +114,9 @@ async function help(message, commands, prefix) {
         for (const [name, data] of entries) {
             embed.addFields({
                 name: `${prefix}${name}`,
-                value: data.description || "Sin descripción.",
+                value:
+                    data.description ||
+                    "Sin descripción.",
                 inline: false
             });
         }
@@ -82,7 +126,7 @@ async function help(message, commands, prefix) {
         name: "🐾 Interacciones",
         value:
             `${prefix}hug — Abrazo\n` +
-            `${prefix}pat — Acariciar\n` +
+            `${prefix}pat — Pat pat\n` +
             `${prefix}boop — Boop\n` +
             `${prefix}cuddle — Acurrucarse\n` +
             `${prefix}poke — Poke\n` +
@@ -91,7 +135,7 @@ async function help(message, commands, prefix) {
     });
 
     embed.setFooter({
-        text: "🌸 ¡Quiero descubrirlas todas contigo!"
+        text: "🌸 Responde al mensaje de alguien para usar una interacción."
     });
 
     await message.reply({
@@ -112,43 +156,59 @@ async function interaction({
     emoji,
     gifs
 }) {
-    const gif = getRandomGif(gifs, category);
+    // Obtener GIF desde la API
+    const gif = await getRandomGif(
+        gifs,
+        category
+    );
 
-    // ID único para este botón.
+    // ID único para el botón
     const buttonId =
-        `return_${category.toLowerCase()}_${message.id}_${target.id}`;
+        `return_${category.toLowerCase()}_${message.id}`;
 
     const button = new ButtonBuilder()
         .setCustomId(buttonId)
-        .setLabel(`${emoji} Devolver ${returnName}`)
+        .setLabel(
+            `${emoji} Devolver ${returnName}`
+        )
         .setStyle(ButtonStyle.Primary);
 
     const row = new ActionRowBuilder()
         .addComponents(button);
 
+    // ==========================================
+    // EMBED ORIGINAL
+    // ==========================================
+
     const embed = new EmbedBuilder()
         .setColor(0xffb6d9)
         .setDescription(
-            `${message.author} le hizo **${interactionName}** a ${target}! 🐾💕`
+            `${message.author} le hizo ` +
+            `**${interactionName}** a ${target}! 🐾💕`
         )
         .setFooter({
-            text: "🌸 ¡Puedes devolver la interacción!"
+            text:
+                "🌸 ¡La otra persona puede devolver la interacción!"
         });
 
     if (gif) {
         embed.setImage(gif);
     }
 
-    const sentMessage = await message.channel.send({
-        embeds: [embed],
-        components: [row],
-        allowedMentions: {
-            users: [message.author.id, target.id]
-        }
-    });
+    const sentMessage =
+        await message.channel.send({
+            embeds: [embed],
+            components: [row],
+            allowedMentions: {
+                users: [
+                    message.author.id,
+                    target.id
+                ]
+            }
+        });
 
     // ==========================================
-    // BOTÓN DE DEVOLVER
+    // BOTÓN
     // ==========================================
 
     const collector =
@@ -156,62 +216,105 @@ async function interaction({
             time: 5 * 60 * 1000
         });
 
-    collector.on("collect", async interactionButton => {
-        // Solo puede devolverla quien recibió la interacción.
-        if (interactionButton.user.id !== target.id) {
-            return interactionButton.reply({
-                content:
-                    `🐾 ¡E-eh! Este botón es para ${target}! 💕`,
-                ephemeral: true
+    collector.on(
+        "collect",
+        async buttonInteraction => {
+
+            // ======================================
+            // SOLO EL DESTINATARIO PUEDE DEVOLVER
+            // ======================================
+
+            if (
+                buttonInteraction.user.id !==
+                target.id
+            ) {
+                return buttonInteraction.reply({
+                    content:
+                        `🐾 ¡E-eh! Este botón es para ${target}! 💕`,
+                    ephemeral: true
+                });
+            }
+
+            // ======================================
+            // OBTENER OTRO GIF
+            // ======================================
+
+            const returnGif =
+                await getRandomGif(
+                    gifs,
+                    category
+                );
+
+            // ======================================
+            // EMBED DE DEVOLUCIÓN
+            // ======================================
+
+            const returnEmbed =
+                new EmbedBuilder()
+                    .setColor(0xffb6d9)
+                    .setDescription(
+                        `${target} no dudó ni un segundo ` +
+                        `en devolverle **${returnName}** ` +
+                        `a ${message.author}! 🐾💕`
+                    )
+                    .setFooter({
+                        text:
+                            "🌸 ¡Qué bonito!"
+                    });
+
+            if (returnGif) {
+                returnEmbed.setImage(returnGif);
+            }
+
+            // ======================================
+            // ACTUALIZAR MENSAJE
+            // ======================================
+
+            await buttonInteraction.update({
+                embeds: [returnEmbed],
+                components: []
             });
+
+            collector.stop("returned");
         }
+    );
 
-        // Evita que se pueda devolver varias veces.
-        if (collector.ended) {
-            return;
+    // ==========================================
+    // CUANDO EXPIRA EL BOTÓN
+    // ==========================================
+
+    collector.on(
+        "end",
+        async (_, reason) => {
+
+            if (reason === "returned") {
+                return;
+            }
+
+            const disabledButton =
+                new ButtonBuilder()
+                    .setCustomId(buttonId)
+                    .setLabel(
+                        `${emoji} Devolver ${returnName}`
+                    )
+                    .setStyle(
+                        ButtonStyle.Primary
+                    )
+                    .setDisabled(true);
+
+            const disabledRow =
+                new ActionRowBuilder()
+                    .addComponents(
+                        disabledButton
+                    );
+
+            await sentMessage.edit({
+                components: [
+                    disabledRow
+                ]
+            }).catch(() => {});
         }
-
-        const returnGif = getRandomGif(gifs, category);
-
-        const returnEmbed = new EmbedBuilder()
-            .setColor(0xffb6d9)
-            .setDescription(
-                `${target} no dudó ni un segundo en devolverle ` +
-                `**${returnName}** a ${message.author}! 🐾💕`
-            )
-            .setFooter({
-                text: "🌸 ¡Qué bonito!"
-            });
-
-        if (returnGif) {
-            returnEmbed.setImage(returnGif);
-        }
-
-        await interactionButton.update({
-            embeds: [returnEmbed],
-            components: []
-        });
-
-        collector.stop("returned");
-    });
-
-    collector.on("end", async () => {
-        // Si nadie la devolvió, simplemente desactivamos el botón.
-        if (collector.endReason === "returned") return;
-
-        const disabledButton = new ButtonBuilder()
-            .setCustomId(buttonId)
-            .setLabel(`${emoji} Devolver ${returnName}`)
-            .setStyle(ButtonStyle.Primary)
-            .setDisabled(true);
-
-        const disabledRow = new ActionRowBuilder()
-            .addComponents(disabledButton);
-
-        await sentMessage.edit({
-            components: [disabledRow]
-        }).catch(() => {});
-    });
+    );
 }
 
 // ==========================================
@@ -219,7 +322,8 @@ async function interaction({
 // ==========================================
 
 async function hug(message, args, gifs) {
-    const target = await getTargetFromReply(message);
+    const target =
+        await getTargetFromReply(message);
 
     if (!target) {
         return message.reply(
@@ -227,7 +331,10 @@ async function hug(message, args, gifs) {
         );
     }
 
-    if (target.id === message.author.id) {
+    if (
+        target.id ===
+        message.author.id
+    ) {
         return message.reply(
             "🐾 ¿Eh? ¡No puedes hacerte un abrazo a ti mismo! 🤭💕"
         );
@@ -249,7 +356,8 @@ async function hug(message, args, gifs) {
 // ==========================================
 
 async function pat(message, args, gifs) {
-    const target = await getTargetFromReply(message);
+    const target =
+        await getTargetFromReply(message);
 
     if (!target) {
         return message.reply(
@@ -257,7 +365,10 @@ async function pat(message, args, gifs) {
         );
     }
 
-    if (target.id === message.author.id) {
+    if (
+        target.id ===
+        message.author.id
+    ) {
         return message.reply(
             "🐾 ¡Jeje! Creo que sería difícil hacerte pat pat a ti mismo. 🤭"
         );
@@ -279,7 +390,8 @@ async function pat(message, args, gifs) {
 // ==========================================
 
 async function boop(message, args, gifs) {
-    const target = await getTargetFromReply(message);
+    const target =
+        await getTargetFromReply(message);
 
     if (!target) {
         return message.reply(
@@ -287,7 +399,10 @@ async function boop(message, args, gifs) {
         );
     }
 
-    if (target.id === message.author.id) {
+    if (
+        target.id ===
+        message.author.id
+    ) {
         return message.reply(
             "👉🐾 ¡Boop! Pero... espera, ¡ese eras tú! 🤭"
         );
@@ -309,7 +424,8 @@ async function boop(message, args, gifs) {
 // ==========================================
 
 async function cuddle(message, args, gifs) {
-    const target = await getTargetFromReply(message);
+    const target =
+        await getTargetFromReply(message);
 
     if (!target) {
         return message.reply(
@@ -317,7 +433,10 @@ async function cuddle(message, args, gifs) {
         );
     }
 
-    if (target.id === message.author.id) {
+    if (
+        target.id ===
+        message.author.id
+    ) {
         return message.reply(
             "🐾💕 ¡Jeje! Necesitamos a otro amigo para acurrucarnos."
         );
@@ -327,8 +446,10 @@ async function cuddle(message, args, gifs) {
         message,
         target,
         category: "Cuddle",
-        interactionName: "un abrazo acurrucado",
-        returnName: "acurrucamiento",
+        interactionName:
+            "un abrazo acurrucado",
+        returnName:
+            "acurrucamiento",
         emoji: "🥰",
         gifs
     });
@@ -339,7 +460,8 @@ async function cuddle(message, args, gifs) {
 // ==========================================
 
 async function poke(message, args, gifs) {
-    const target = await getTargetFromReply(message);
+    const target =
+        await getTargetFromReply(message);
 
     if (!target) {
         return message.reply(
@@ -347,7 +469,10 @@ async function poke(message, args, gifs) {
         );
     }
 
-    if (target.id === message.author.id) {
+    if (
+        target.id ===
+        message.author.id
+    ) {
         return message.reply(
             "👉🐾 ¡Poke! ...¡Pero te hiciste poke a ti mismo! 🤭"
         );
@@ -369,7 +494,8 @@ async function poke(message, args, gifs) {
 // ==========================================
 
 async function meow(message, args, gifs) {
-    const target = await getTargetFromReply(message);
+    const target =
+        await getTargetFromReply(message);
 
     if (!target) {
         return message.reply(
@@ -377,7 +503,10 @@ async function meow(message, args, gifs) {
         );
     }
 
-    if (target.id === message.author.id) {
+    if (
+        target.id ===
+        message.author.id
+    ) {
         return message.reply(
             "🐾 ¡Miau! ...¿Me estaba hablando a mí misma? 🤔"
         );
@@ -427,7 +556,8 @@ async function handleCommand({
     getNextThinking,
     reloadStatus
 }) {
-    const handler = commandHandlers[commandName];
+    const handler =
+        commandHandlers[commandName];
 
     if (!handler) {
         return message.reply(
@@ -436,15 +566,32 @@ async function handleCommand({
         );
     }
 
+    // ==============================
+    // COMANDOS BÁSICOS
+    // ==============================
+
     if (commandName === "ping") {
         return handler(message);
     }
 
     if (commandName === "help") {
-        return handler(message, commands, prefix);
+        return handler(
+            message,
+            commands,
+            prefix
+        );
     }
 
-    return handler(message, args, gifs, config);
+    // ==============================
+    // INTERACCIONES
+    // ==============================
+
+    return handler(
+        message,
+        args,
+        gifs,
+        config
+    );
 }
 
 // ==========================================
