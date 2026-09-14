@@ -1,8 +1,8 @@
 import {
-  Client,
-  GatewayIntentBits,
-  ActivityType,
-  Events
+    Client,
+    GatewayIntentBits,
+    ActivityType,
+    Events
 } from "discord.js";
 
 import express from "express";
@@ -11,230 +11,344 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import {
-  handleCommand,
-  handleButton
+    handleCommand,
+    handleButton
 } from "./logic.js";
 
-
-/* =========================
-   CONFIGURACIÓN
-========================= */
-
-const TOKEN = process.env.TOKEN;
-const PORT = process.env.PORT || 3000;
-const OWNER_ID = process.env.OWNER_ID;
-
-const PREFIX = "m;";
-
-if (!TOKEN) {
-  console.error("[MITTY] ❌ Falta TOKEN.");
-  process.exit(1);
-}
-
-if (!process.env.GIF_TOKEN) {
-    console.error("[MITTY] ❌ Falta GIF_TOKEN.");
-    process.exit(1);
-}
-
-/* =========================
+/* =========================================================
    RUTAS
-========================= */
+========================================================= */
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/* =========================================================
+   VARIABLES DE ENTORNO
+========================================================= */
 
-/* =========================
-   JSON
-========================= */
+const TOKEN = process.env.TOKEN;
+const PORT = process.env.PORT || 3000;
+const OWNER_ID = process.env.OWNER_ID;
+const GIF_TOKEN = process.env.GIF_TOKEN;
 
-function loadJSON(file) {
-  try {
-    return JSON.parse(
-      fs.readFileSync(
-        path.join(__dirname, file),
-        "utf8"
-      )
-    );
-  } catch (error) {
-    console.error(`[MITTY] Error leyendo ${file}:`, error);
-    return {};
-  }
+const PREFIX = "m;";
+
+/* =========================================================
+   COMPROBACIONES
+========================================================= */
+
+if (!TOKEN) {
+    console.error("[MITTY] ❌ Falta la variable TOKEN.");
+    process.exit(1);
 }
 
-const commands = loadJSON("cmd.json");
-const config = loadJSON("config.json");
-const status = loadJSON("status.json");
+if (!GIF_TOKEN) {
+    console.error("[MITTY] ❌ Falta la variable GIF_TOKEN.");
+    process.exit(1);
+}
 
+/* =========================================================
+   CARGAR JSON
+========================================================= */
 
-/* =========================
-   ESTADO
-========================= */
+function loadJSON(fileName, fallback = {}) {
+    const filePath = path.join(__dirname, fileName);
+
+    try {
+        if (!fs.existsSync(filePath)) {
+            console.warn(
+                `[MITTY] ⚠️ ${fileName} no existe. Usando valor predeterminado.`
+            );
+
+            return fallback;
+        }
+
+        return JSON.parse(
+            fs.readFileSync(filePath, "utf8")
+        );
+
+    } catch (error) {
+        console.error(
+            `[MITTY] ❌ Error leyendo ${fileName}:`,
+            error
+        );
+
+        return fallback;
+    }
+}
+
+/* =========================================================
+   ARCHIVOS
+========================================================= */
+
+const commands = loadJSON("cmd.json", {});
+const config = loadJSON("config.json", {});
+
+let status = loadJSON("status.json", {
+    statuses: [
+        "🌸 Explorando el Abismo",
+        "🐾 Jugando con Nanachi",
+        "💗 Ayudando a mis amigos"
+    ],
+    thinking: [
+        "💭 ¿Qué habrá por aquí?",
+        "💭 Me pregunto qué estarán haciendo...",
+        "💭 ¡Tengo una idea!"
+    ]
+});
+
+/* =========================================================
+   ESTADOS
+========================================================= */
 
 let statusIndex = 0;
 let thinkingIndex = 0;
 
 function getNextStatus() {
-  if (!Array.isArray(status.statuses) || !status.statuses.length) {
-    return null;
-  }
+    if (
+        !Array.isArray(status.statuses) ||
+        status.statuses.length === 0
+    ) {
+        return "🌸 Explorando el Abismo";
+    }
 
-  const value = status.statuses[statusIndex];
+    const value = status.statuses[statusIndex];
 
-  statusIndex =
-    (statusIndex + 1) % status.statuses.length;
+    statusIndex =
+        (statusIndex + 1) %
+        status.statuses.length;
 
-  return value;
+    return value;
 }
 
 function getNextThinking() {
-  if (!Array.isArray(status.thinking) || !status.thinking.length) {
-    return null;
-  }
+    if (
+        !Array.isArray(status.thinking) ||
+        status.thinking.length === 0
+    ) {
+        return "💭 ¿Qué habrá por aquí?";
+    }
 
-  const value = status.thinking[thinkingIndex];
+    const value = status.thinking[thinkingIndex];
 
-  thinkingIndex =
-    (thinkingIndex + 1) % status.thinking.length;
+    thinkingIndex =
+        (thinkingIndex + 1) %
+        status.thinking.length;
 
-  return value;
+    return value;
 }
+
+/* =========================================================
+   RECARGAR STATUS
+========================================================= */
 
 function reloadStatus() {
-  const newStatus = loadJSON("status.json");
+    const newStatus = loadJSON(
+        "status.json",
+        {
+            statuses: [],
+            thinking: []
+        }
+    );
 
-  Object.keys(status).forEach(key => {
-    delete status[key];
-  });
+    status = newStatus;
 
-  Object.assign(status, newStatus);
+    statusIndex = 0;
+    thinkingIndex = 0;
 
-  statusIndex = 0;
-  thinkingIndex = 0;
+    console.log(
+        "[MITTY] 🔄 status.json recargado."
+    );
 }
 
-
-/* =========================
+/* =========================================================
    CLIENTE DISCORD
-========================= */
+========================================================= */
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
 });
 
-
-/* =========================
+/* =========================================================
    BOT LISTO
-========================= */
+========================================================= */
 
-client.once(Events.ClientReady, readyClient => {
-  console.log(
-    `[MITTY] ✅ Conectado como ${readyClient.user.tag}`
-  );
+client.once(
+    Events.ClientReady,
+    readyClient => {
 
-  readyClient.user.setActivity("m;help", {
-    type: ActivityType.Listening
-  });
-});
+        console.log(
+            `[MITTY] ✅ Conectada como ${readyClient.user.tag}`
+        );
 
+        readyClient.user.setPresence({
+            activities: [
+                {
+                    name: getNextStatus(),
+                    type: ActivityType.Custom
+                }
+            ],
+            status: "online"
+        });
 
-/* =========================
-   COMANDOS POR PREFIJO
-========================= */
+        /* Cambiar estado cada 30 segundos */
 
-client.on(Events.MessageCreate, async message => {
-  if (message.author.bot) {
-    return;
-  }
+        setInterval(() => {
 
-  if (!message.content.startsWith(PREFIX)) {
-    return;
-  }
+            readyClient.user.setPresence({
+                activities: [
+                    {
+                        name: getNextStatus(),
+                        type: ActivityType.Custom
+                    }
+                ],
+                status: "online"
+            });
 
-  const content = message.content.slice(PREFIX.length).trim();
-
-  if (!content) {
-    return;
-  }
-
-  const parts = content.split(/\s+/);
-
-  const commandName = parts.shift().toLowerCase();
-
-  const args = parts;
-
-  try {
-    await handleCommand({
-      message,
-      commandName,
-      args,
-      commands,
-      gifs: {},
-      config,
-      prefix: PREFIX,
-      ownerId: OWNER_ID,
-      getNextStatus,
-      getNextThinking,
-      reloadStatus
-    });
-  } catch (error) {
-    console.error(
-      "[MITTY] Error en MessageCreate:",
-      error
-    );
-  }
-});
-
-
-/* =========================
-   BOTONES
-========================= */
-
-client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isButton()) {
-    return;
-  }
-
-  try {
-    await handleButton(interaction);
-  } catch (error) {
-    console.error(
-      "[MITTY] Error manejando botón:",
-      error
-    );
-
-    if (!interaction.replied && !interaction.deferred) {
-      await interaction.reply({
-        content: "❌ Ocurrió un error con esta interacción.",
-        ephemeral: true
-      }).catch(() => {});
+        }, 30000);
     }
-  }
-});
+);
 
+/* =========================================================
+   MENSAJES / COMANDOS
+========================================================= */
 
-/* =========================
+client.on(
+    Events.MessageCreate,
+    async message => {
+
+        /* Ignorar otros bots */
+
+        if (message.author.bot) {
+            return;
+        }
+
+        /* =================================================
+           PREFIJO
+           Ahora acepta:
+           m;help
+           M;help
+           m;HELP
+           M;HELP
+        ================================================= */
+
+        const contentLower =
+            message.content.toLowerCase();
+
+        if (!contentLower.startsWith(PREFIX)) {
+            return;
+        }
+
+        const content =
+            message.content
+                .slice(PREFIX.length)
+                .trim();
+
+        if (!content) {
+            return;
+        }
+
+        const parts =
+            content.split(/\s+/);
+
+        const commandName =
+            parts
+                .shift()
+                .toLowerCase();
+
+        const args = parts;
+
+        try {
+
+            await handleCommand({
+                message,
+                commandName,
+                args,
+                commands,
+                config,
+                prefix: PREFIX,
+                ownerId: OWNER_ID,
+                getNextStatus,
+                getNextThinking,
+                reloadStatus
+            });
+
+        } catch (error) {
+
+            console.error(
+                "[MITTY] ❌ Error en MessageCreate:",
+                error
+            );
+
+            await message.reply(
+                "🐾 ¡Ay! Algo salió mal mientras intentaba hacer eso."
+            ).catch(() => {});
+        }
+    }
+);
+
+/* =========================================================
+   BOTONES
+========================================================= */
+
+client.on(
+    Events.InteractionCreate,
+    async interaction => {
+
+        if (!interaction.isButton()) {
+            return;
+        }
+
+        try {
+
+            await handleButton(interaction);
+
+        } catch (error) {
+
+            console.error(
+                "[MITTY] ❌ Error manejando botón:",
+                error
+            );
+
+            if (
+                !interaction.replied &&
+                !interaction.deferred
+            ) {
+
+                await interaction.reply({
+                    content:
+                        "❌ Ocurrió un error con este botón.",
+                    ephemeral: true
+                }).catch(() => {});
+            }
+        }
+    }
+);
+
+/* =========================================================
    SERVIDOR WEB
-========================= */
+========================================================= */
 
 const app = express();
 
 app.get("/", (req, res) => {
-  res.send("🤖 Mitty online.");
+    res.send("🐾 Mitty está en línea.");
 });
 
 app.listen(PORT, () => {
-  console.log(`[MITTY] 🌐 Puerto ${PORT}`);
+
+    console.log(
+        `[MITTY] 🌐 Servidor activo en el puerto ${PORT}.`
+    );
 });
 
-
-/* =========================
+/* =========================================================
    LOGIN
-========================= */
+========================================================= */
 
 client.login(TOKEN);
