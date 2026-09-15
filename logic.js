@@ -12,14 +12,23 @@ import {
 const GIF_TOKEN = process.env.GIF_TOKEN;
 
 const GIF_SEARCHES = {
+    Hug: "cute furry hug",
+    Pat: "cute furry headpat",
+    Boop: "cute furry boop",
+    Cuddle: "cute furry cuddle",
+    Poke: "cute furry poke",
+    Meow: "cute furry meow",
 
-    Hug: "anime hug",
-    Pat: "anime pat",
-    Boop: "anime boop",
-    Cuddle: "anime cuddle",
-    Poke: "anime poke",
-    Meow: "anime meow"
-
+    Wave: "cute furry wave",
+    Highfive: "cute furry high five",
+    Dance: "cute furry dance",
+    Happy: "cute furry happy",
+    Bonk: "cute furry bonk",
+    Snuggle: "cute furry snuggle",
+    Blep: "cute furry blep",
+    Spin: "cute furry spin",
+    Sleep: "cute furry sleeping",
+    Nom: "cute furry nom"
 };
 
 /* =========================================================
@@ -158,16 +167,24 @@ async function getTargetFromReply(message) {
 ========================================================= */
 
 function getButtonEmoji(category) {
-
     const emojis = {
-
         Hug: "🤗",
-        Pat: "🥰",
+        Pat: "🫳",
         Boop: "👉",
         Cuddle: "🫂",
         Poke: "👉",
-        Meow: "🐱"
+        Meow: "🐱",
 
+        Wave: "👋",
+        Highfive: "✋",
+        Dance: "💃",
+        Happy: "✨",
+        Bonk: "🔨",
+        Snuggle: "🫂",
+        Blep: "😛",
+        Spin: "🌀",
+        Sleep: "💤",
+        Nom: "🍪"
     };
 
     return emojis[category] || "💗";
@@ -532,6 +549,96 @@ async function meow(message) {
     });
 }
 
+async function wave(message) {
+    await sendInteraction({
+        message,
+        category: "Wave",
+        actionText: "saludó a",
+        buttonText: "Devolver saludo"
+    });
+}
+
+async function highfive(message) {
+    await sendInteraction({
+        message,
+        category: "Highfive",
+        actionText: "chocó los cinco con",
+        buttonText: "Devolver high five"
+    });
+}
+
+async function dance(message) {
+    await sendInteraction({
+        message,
+        category: "Dance",
+        actionText: "bailó con",
+        buttonText: "Bailar también"
+    });
+}
+
+async function happy(message) {
+    await sendInteraction({
+        message,
+        category: "Happy",
+        actionText: "celebró con",
+        buttonText: "Celebrar también"
+    });
+}
+
+async function bonk(message) {
+    await sendInteraction({
+        message,
+        category: "Bonk",
+        actionText: "le dio un bonk a",
+        buttonText: "Devolver bonk"
+    });
+}
+
+async function snuggle(message) {
+    await sendInteraction({
+        message,
+        category: "Snuggle",
+        actionText: "se acurrucó con",
+        buttonText: "Devolver acurrucón"
+    });
+}
+
+async function blep(message) {
+    await sendInteraction({
+        message,
+        category: "Blep",
+        actionText: "le hizo blep a",
+        buttonText: "Devolver blep"
+    });
+}
+
+async function spin(message) {
+    await sendInteraction({
+        message,
+        category: "Spin",
+        actionText: "dio vueltas con",
+        buttonText: "Dar vueltas también"
+    });
+}
+
+async function sleep(message) {
+    await sendInteraction({
+        message,
+        category: "Sleep",
+        actionText: "se quedó dormido junto a",
+        buttonText: "Dormir también"
+    });
+}
+
+async function nom(message) {
+    await sendInteraction({
+        message,
+        category: "Nom",
+        actionText: "compartió comida con",
+        buttonText: "Devolver nom"
+    });
+}
+
 /* =========================================================
    BOTONES
 ========================================================= */
@@ -654,7 +761,17 @@ export async function handleButton(interaction) {
         boop: "Boop",
         cuddle: "Cuddle",
         poke: "Poke",
-        meow: "Meow"
+        meow: "Meow",
+        Wave: "Wave",
+        Highfive: "Highfive",
+        Dance: "Dance",
+        Happy: "Happy",
+        Bonk: "Bonk",
+        Snuggle: "Snuggle",
+        Blep: "Blep",
+        Spin: "Spin",
+        Sleep: "Sleep",
+        Nom: "Nom"
 
     };
 
@@ -835,6 +952,47 @@ export async function handleCommand({
             case "miau":
                 await meow(message);
                 return true;
+
+            case "wave":
+    await wave(message);
+    return true;
+
+case "highfive":
+case "high":
+    await highfive(message);
+    return true;
+
+case "dance":
+    await dance(message);
+    return true;
+
+case "happy":
+    await happy(message);
+    return true;
+
+case "bonk":
+    await bonk(message);
+    return true;
+
+case "snuggle":
+    await snuggle(message);
+    return true;
+
+case "blep":
+    await blep(message);
+    return true;
+
+case "spin":
+    await spin(message);
+    return true;
+
+case "sleep":
+    await sleep(message);
+    return true;
+
+case "nom":
+    await nom(message);
+    return true;
 
             /* -------------------------
                COMANDO DESCONOCIDO
