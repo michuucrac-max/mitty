@@ -12,22 +12,22 @@ import {
 const GIF_TOKEN = process.env.GIF_TOKEN;
 
 const GIF_SEARCHES = {
-    Hug: "cute furry hug",
-    Pat: "cute furry headpat",
-    Boop: "cute furry boop",
-    Cuddle: "cute furry cuddle",
-    Poke: "cute furry poke",
+    Hug: "anime hug",
+    Pat: "anime headpat",
+    Boop: "anime boop",
+    Cuddle: "anime cuddle",
+    Poke: "anime poke",
     Meow: "cute furry meow",
 
-    Wave: "cute furry wave",
-    Highfive: "cute furry high five",
-    Dance: "cute furry dance",
-    Happy: "cute furry happy",
-    Bonk: "cute furry bonk",
-    Snuggle: "cute furry snuggle",
-    Blep: "cute furry blep",
-    Spin: "cute furry spin",
-    Sleep: "cute furry sleeping",
+    Wave: "anime wave",
+    Highfive: "anime high five",
+    Dance: "anime dance",
+    Happy: "anime happy",
+    Bonk: "anime bonk",
+    Snuggle: "anime snuggle",
+    Blep: "anime blep",
+    Spin: "anime spin",
+    Sleep: "anime sleeping",
     Nom: "cute furry nom"
 };
 
