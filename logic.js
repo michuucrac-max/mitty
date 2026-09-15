@@ -12,7 +12,7 @@ import {
 const GIF_TOKEN = process.env.GIF_TOKEN;
 
 const GIF_SEARCHES = {
-    Hug: "babyfur hug",
+    Hug: "cute furry hug",
     Pat: "cute furry headpat",
     Boop: "cute furry boop",
     Cuddle: "cute furry cuddle",
