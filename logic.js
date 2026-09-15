@@ -5,6 +5,142 @@ import {
     ButtonStyle
 } from "discord.js";
 
+// =========================================================
+// 💾 SISTEMA DE PERFILES
+// =========================================================
+
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const PROFILE_FILE =
+    path.join(__dirname, "profile.json");
+
+
+// =========================================================
+// 📖 CARGAR PERFILES
+// =========================================================
+
+function loadProfiles() {
+
+    try {
+
+        if (!fs.existsSync(PROFILE_FILE)) {
+
+            return {
+                users: {}
+            };
+
+        }
+
+        return JSON.parse(
+            fs.readFileSync(
+                PROFILE_FILE,
+                "utf8"
+            )
+        );
+
+    } catch (error) {
+
+        console.error(
+            "[MITTY] ❌ Error cargando profile.json:",
+            error
+        );
+
+        return {
+            users: {}
+        };
+
+    }
+}
+
+
+// =========================================================
+// 💾 GUARDAR PERFILES
+// =========================================================
+
+function saveProfiles(data) {
+
+    try {
+
+        fs.writeFileSync(
+            PROFILE_FILE,
+            JSON.stringify(
+                data,
+                null,
+                4
+            ),
+            "utf8"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "[MITTY] ❌ Error guardando profile.json:",
+            error
+        );
+
+    }
+}
+
+
+// =========================================================
+// 👤 OBTENER PERFIL DE USUARIO
+// =========================================================
+
+function getProfile(userId) {
+
+    const data =
+        loadProfiles();
+
+    if (!data.users[userId]) {
+
+        data.users[userId] = {
+
+            stars: 0,
+
+            social: {
+                status: "Soltero/a"
+            },
+
+            interactions: {
+
+                given: {},
+
+                received: {}
+
+            },
+
+            gifs: {
+
+                sent: 0,
+
+                received: 0
+
+            },
+
+            stats: {
+
+                messages: 0,
+
+                commands: 0,
+
+                summaries: 0
+
+            }
+
+        };
+
+        saveProfiles(data);
+
+    }
+
+    return data.users[userId];
+}
+
 /* =========================================================
    GIPHY
 ========================================================= */
@@ -617,6 +753,177 @@ async function nom(message) {
     });
 }
 
+// =========================================================
+// 👤 COMANDO M;PROFILE
+// =========================================================
+
+async function profile(message, targetUser) {
+
+    const user =
+        targetUser || message.author;
+
+
+    // =====================================================
+    // 💾 OBTENER DATOS
+    // =====================================================
+
+    const data =
+        getProfile(user.id);
+
+
+    // =====================================================
+    // 👤 NOMBRE
+    // =====================================================
+
+    const member =
+        message.guild?.members.cache.get(
+            user.id
+        );
+
+    const displayName =
+        member?.displayName ||
+        user.globalName ||
+        user.username;
+
+
+    // =====================================================
+    // 💞 CONTADORES DE INTERACCIONES
+    // =====================================================
+
+    const totalGiven =
+        Object.values(
+            data.interactions.given
+        ).reduce(
+            (total, amount) =>
+                total + amount,
+            0
+        );
+
+    const totalReceived =
+        Object.values(
+            data.interactions.received
+        ).reduce(
+            (total, amount) =>
+                total + amount,
+            0
+        );
+
+
+    // =====================================================
+    // 🖼️ EMBED DEL PERFIL
+    // =====================================================
+
+    const embed =
+        new EmbedBuilder()
+
+            .setColor(0xff9fcf)
+
+            .setAuthor({
+
+                name:
+                    `Perfil de ${displayName}`,
+
+                iconURL:
+                    user.displayAvatarURL({
+                        extension: "png",
+                        size: 256
+                    })
+
+            })
+
+            .setThumbnail(
+                user.displayAvatarURL({
+                    extension: "png",
+                    size: 512
+                })
+            )
+
+            .setDescription(
+                `👤 ${user}\n\n` +
+
+                `💗 **Estado:** ` +
+                `${data.social.status}\n` +
+
+                `⭐ **Stars:** ` +
+                `${data.stars}`
+            )
+
+            // =================================================
+            // 💞 INTERACCIONES
+            // =================================================
+
+            .addFields({
+
+                name:
+                    "💞 Interacciones",
+
+                value:
+                    `📤 Enviadas: **${totalGiven}**\n` +
+                    `📥 Recibidas: **${totalReceived}**`,
+
+                inline: true
+
+            })
+
+            // =================================================
+            // 🎞️ GIFS
+            // =================================================
+
+            .addFields({
+
+                name:
+                    "🎞️ GIFs",
+
+                value:
+                    `📤 Enviados: **${data.gifs.sent}**\n` +
+                    `📥 Recibidos: **${data.gifs.received}**`,
+
+                inline: true
+
+            })
+
+            // =================================================
+            // 📊 ESTADÍSTICAS
+            // =================================================
+
+            .addFields({
+
+                name:
+                    "📊 Estadísticas",
+
+                value:
+                    `💬 Mensajes: **${data.stats.messages}**\n` +
+                    `⚙️ Comandos: **${data.stats.commands}**\n` +
+                    `📝 Resúmenes: **${data.stats.summaries}**`,
+
+                inline: false
+
+            })
+
+            .setFooter({
+
+                text:
+                    "🐾 Mitty • Perfil"
+
+            })
+
+            .setTimestamp();
+
+
+    // =====================================================
+    // 📤 ENVIAR PERFIL
+    // =====================================================
+
+    await message.reply({
+
+        embeds: [
+            embed
+        ]
+
+    });
+
+}
+
 /* =========================================================
    BOTONES
 ========================================================= */
@@ -897,7 +1204,31 @@ export async function handleCommand({
                     prefix
                 );
                 return true;
+                
+case "profile":
+case "perfil": {
 
+    let targetUser =
+        message.author;
+
+    if (
+        message.mentions.users.size > 0
+    ) {
+
+        targetUser =
+            message.mentions.users.first();
+
+    }
+
+    await profile(
+        message,
+        targetUser
+    );
+
+    return true;
+
+}
+                
             /* -------------------------
                INTERACCIONES
             ------------------------- */
