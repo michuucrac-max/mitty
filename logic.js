@@ -1,44 +1,83 @@
-import {
-    EmbedBuilder,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle
-} from "discord.js";
+// =========================================================
+// 🧠 MITTY — MOTOR PRINCIPAL
+// =========================================================
+//
+// TODO EL SISTEMA DE COMANDOS FUNCIONARÁ DESDE JSON.
+//
+// Archivos:
+//
+// interactions.json
+// profile.json
+// utility.json
+// moderation.json
+// ai.json
+//
+// TODOS ESTÁN EN LA RAÍZ DEL PROYECTO.
+//
+// logic.js NO tendrá la configuración individual
+// de cada comando.
+//
+// Su trabajo será leer los JSON y ejecutar sus sistemas.
+// =========================================================
 
-// =========================================================
-// 💾 SISTEMA DE PERFILES
-// =========================================================
 
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
-const PROFILE_FILE =
-    path.join(__dirname, "profile.json");
+// =========================================================
+// 📁 RUTA PRINCIPAL
+// =========================================================
+
+const __filename =
+    fileURLToPath(import.meta.url);
+
+const __dirname =
+    path.dirname(__filename);
 
 
 // =========================================================
-// 📖 CARGAR PERFILES
+// 📦 ARCHIVOS JSON DE COMANDOS
 // =========================================================
 
-function loadProfiles() {
+const COMMAND_FILES = [
+
+    "interactions.json",
+    "profile.json",
+    "utility.json",
+    "moderation.json",
+    "ai.json"
+
+];
+
+
+// =========================================================
+// 📖 LEER JSON
+// =========================================================
+
+function loadJSON(fileName) {
+
+    const filePath =
+        path.join(
+            __dirname,
+            fileName
+        );
 
     try {
 
-        if (!fs.existsSync(PROFILE_FILE)) {
+        if (!fs.existsSync(filePath)) {
 
-            return {
-                users: {}
-            };
+            console.warn(
+                `[MITTY] ⚠️ Falta ${fileName}`
+            );
 
+            return null;
         }
 
         return JSON.parse(
             fs.readFileSync(
-                PROFILE_FILE,
+                filePath,
                 "utf8"
             )
         );
@@ -46,1295 +85,401 @@ function loadProfiles() {
     } catch (error) {
 
         console.error(
-            "[MITTY] ❌ Error cargando profile.json:",
+            `[MITTY] ❌ Error leyendo ${fileName}:`,
             error
-        );
-
-        return {
-            users: {}
-        };
-
-    }
-}
-
-
-// =========================================================
-// 💾 GUARDAR PERFILES
-// =========================================================
-
-function saveProfiles(data) {
-
-    try {
-
-        fs.writeFileSync(
-            PROFILE_FILE,
-            JSON.stringify(
-                data,
-                null,
-                4
-            ),
-            "utf8"
-        );
-
-    } catch (error) {
-
-        console.error(
-            "[MITTY] ❌ Error guardando profile.json:",
-            error
-        );
-
-    }
-}
-
-
-// =========================================================
-// 👤 OBTENER PERFIL DE USUARIO
-// =========================================================
-
-function getProfile(userId) {
-
-    const data =
-        loadProfiles();
-
-    if (!data.users[userId]) {
-
-        data.users[userId] = {
-
-            stars: 0,
-
-            social: {
-                status: "Soltero/a"
-            },
-
-            interactions: {
-
-                given: {},
-
-                received: {}
-
-            },
-
-            gifs: {
-
-                sent: 0,
-
-                received: 0
-
-            },
-
-            stats: {
-
-                messages: 0,
-
-                commands: 0,
-
-                summaries: 0
-
-            }
-
-        };
-
-        saveProfiles(data);
-
-    }
-
-    return data.users[userId];
-}
-
-/* =========================================================
-   GIPHY
-========================================================= */
-
-const GIF_TOKEN = process.env.GIF_TOKEN;
-
-const GIF_SEARCHES = {
-    Hug: "anime hug",
-    Pat: "anime headpat",
-    Boop: "anime boop",
-    Cuddle: "anime cuddle",
-    Poke: "anime poke",
-    Meow: "cute furry meow",
-
-    Wave: "anime wave",
-    Highfive: "anime high five",
-    Dance: "anime dance",
-    Happy: "anime happy",
-    Bonk: "anime bonk",
-    Snuggle: "anime snuggle",
-    Blep: "anime blep",
-    Spin: "anime spin",
-    Sleep: "anime sleeping",
-    Nom: "cute furry nom"
-};
-
-/* =========================================================
-   OBTENER GIF DE GIPHY
-========================================================= */
-
-export async function getRandomGif(category) {
-
-    if (!GIF_TOKEN) {
-
-        console.error(
-            "[MITTY] ❌ Falta GIF_TOKEN."
         );
 
         return null;
     }
+}
 
-    const query =
-        GIF_SEARCHES[category];
 
-    if (!query) {
+// =========================================================
+// 📚 CARGAR TODOS LOS JSON
+// =========================================================
 
-        console.error(
-            `[MITTY] ❌ Categoría desconocida: ${category}`
-        );
+function loadAllCommands() {
 
-        return null;
-    }
+    const commands = {};
 
-    try {
-
-        const params =
-            new URLSearchParams({
-
-                api_key: GIF_TOKEN,
-
-                q: query,
-
-                limit: "20",
-
-                rating: "g"
-
-            });
-
-        const response =
-            await fetch(
-                `https://api.giphy.com/v1/gifs/search?${params.toString()}`,
-                {
-                    signal:
-                        AbortSignal.timeout(10000),
-
-                    headers: {
-                        "User-Agent":
-                            "Mitty Discord Bot/1.0"
-                    }
-                }
-            );
-
-        if (!response.ok) {
-
-            console.error(
-                `[MITTY] ❌ GIPHY respondió ${response.status}: ${response.statusText}`
-            );
-
-            return null;
-        }
+    for (
+        const fileName
+        of COMMAND_FILES
+    ) {
 
         const data =
-            await response.json();
+            loadJSON(fileName);
 
-        const gifs =
-            (data.data || [])
-                .map(
-                    gif =>
-                        gif?.images?.original?.url
-                )
-                .filter(Boolean);
-
-        if (gifs.length === 0) {
-
-            console.error(
-                `[MITTY] ❌ GIPHY no encontró GIFs para "${query}".`
-            );
-
-            return null;
+        if (!data) {
+            continue;
         }
 
-        const randomIndex =
-            Math.floor(
-                Math.random() * gifs.length
-            );
-
-        return gifs[randomIndex];
-
-    } catch (error) {
-
-        console.error(
-            "[MITTY] ❌ Error consultando GIPHY:",
-            error
-        );
-
-        return null;
+        commands[fileName] =
+            data;
     }
+
+    return commands;
 }
 
-/* =========================================================
-   BUSCAR OBJETIVO DEL REPLY
-========================================================= */
 
-async function getTargetFromReply(message) {
+// =========================================================
+// 🔎 BUSCAR COMANDO
+// =========================================================
 
-    if (!message.reference?.messageId) {
-        return null;
-    }
+function findCommand(commandName) {
 
-    try {
+    const allCommands =
+        loadAllCommands();
 
-        const referenced =
-            await message.fetchReference();
+    const search =
+        commandName
+            .toLowerCase()
+            .trim();
 
-        return referenced.author;
 
-    } catch (error) {
+    for (
+        const [fileName, data]
+        of Object.entries(allCommands)
+    ) {
 
-        console.error(
-            "[MITTY] ❌ No pude obtener el mensaje respondido.",
-            error
-        );
+        if (!data.commands) {
+            continue;
+        }
 
-        return null;
-    }
-}
 
-/* =========================================================
-   EMOJIS
-========================================================= */
-
-function getButtonEmoji(category) {
-    const emojis = {
-        Hug: "🤗",
-        Pat: "🫳",
-        Boop: "👉",
-        Cuddle: "🫂",
-        Poke: "👉",
-        Meow: "🐱",
-
-        Wave: "👋",
-        Highfive: "✋",
-        Dance: "💃",
-        Happy: "✨",
-        Bonk: "🔨",
-        Snuggle: "🫂",
-        Blep: "😛",
-        Spin: "🌀",
-        Sleep: "💤",
-        Nom: "🍪"
-    };
-
-    return emojis[category] || "💗";
-}
-
-/* =========================================================
-   INTERACCIÓN
-========================================================= */
-
-async function sendInteraction({
-
-    message,
-    category,
-    actionText,
-    buttonText
-
-}) {
-
-    const target =
-        await getTargetFromReply(message);
-
-    /* -----------------------------------------------
-       No respondió a nadie
-    ------------------------------------------------ */
-
-    if (!target) {
-
-        await message.reply(
-            "💗 Debes responder al mensaje de alguien para usar este comando."
-        );
-
-        return;
-    }
-
-    /* -----------------------------------------------
-       No permitirse a sí mismo
-    ------------------------------------------------ */
-
-    if (target.id === message.author.id) {
-
-        await message.reply(
-            "💗 No puedes hacerte esta interacción a ti mismo. ¡Responde al mensaje de otra persona!"
-        );
-
-        return;
-    }
-
-    /* -----------------------------------------------
-       GIF
-    ------------------------------------------------ */
-
-    const gif =
-        await getRandomGif(category);
-
-    if (!gif) {
-
-        await message.reply(
-            "😿 No pude conseguir un GIF en este momento. Inténtalo de nuevo."
-        );
-
-        return;
-    }
-
-    /* -----------------------------------------------
-       EMBED
-    ------------------------------------------------ */
-
-    const embed =
-        new EmbedBuilder()
-            .setColor(0xff9fcf)
-            .setDescription(
-                `${message.author} ${actionText} ${target}!`
+        for (
+            const [name, command]
+            of Object.entries(
+                data.commands
             )
-            .setImage(gif)
-            .setFooter({
-                text: "— Mitty 💗"
-            })
-            .setTimestamp();
+        ) {
 
-    /* -----------------------------------------------
-       ID DEL BOTÓN
+            // ---------------------------------------------
+            // NOMBRE PRINCIPAL
+            // ---------------------------------------------
 
-       Guardamos:
-       categoría
-       autor
-       objetivo
-       tiempo de creación
+            if (
+                name.toLowerCase() ===
+                search
+            ) {
 
-       Así sabemos exactamente quién puede devolverlo.
-    ------------------------------------------------ */
+                return {
+                    name,
+                    command,
+                    fileName,
+                    group: data
+                };
 
-    const createdAt =
-        Date.now();
-
-    const customId =
-        `mitty_${category.toLowerCase()}_${message.author.id}_${target.id}_${createdAt}`;
-
-    const button =
-        new ButtonBuilder()
-            .setCustomId(customId)
-            .setLabel(buttonText)
-            .setEmoji(
-                getButtonEmoji(category)
-            )
-            .setStyle(ButtonStyle.Primary);
-
-    const row =
-        new ActionRowBuilder()
-            .addComponents(button);
-
-    /* -----------------------------------------------
-       ENVIAR
-    ------------------------------------------------ */
-
-    const sentMessage =
-        await message.reply({
-
-            embeds: [embed],
-
-            components: [row]
-
-        });
-
-    /* -----------------------------------------------
-       EXPIRACIÓN: 2 MINUTOS
-    ------------------------------------------------ */
-
-    setTimeout(
-        async () => {
-
-            try {
-
-                const expiredButton =
-                    new ButtonBuilder()
-                        .setCustomId(
-                            `mitty_expired_${createdAt}`
-                        )
-                        .setLabel(
-                            buttonText
-                        )
-                        .setEmoji(
-                            getButtonEmoji(category)
-                        )
-                        .setStyle(
-                            ButtonStyle.Secondary
-                        )
-                        .setDisabled(true);
-
-                const expiredRow =
-                    new ActionRowBuilder()
-                        .addComponents(
-                            expiredButton
-                        );
-
-                await sentMessage.edit({
-                    components: [
-                        expiredRow
-                    ]
-                });
-
-            } catch (error) {
-
-                console.error(
-                    "[MITTY] ❌ No pude desactivar el botón:",
-                    error
-                );
             }
 
-        },
-        120000
-    );
+
+            // ---------------------------------------------
+            // ALIASES
+            // ---------------------------------------------
+
+            const aliases =
+                command.aliases || [];
+
+
+            if (
+                aliases.some(
+                    alias =>
+                        alias
+                            .toLowerCase()
+                            .trim() ===
+                        search
+                )
+            ) {
+
+                return {
+                    name,
+                    command,
+                    fileName,
+                    group: data
+                };
+
+            }
+
+        }
+
+    }
+
+    return null;
 }
 
-/* =========================================================
-   COMANDOS BÁSICOS
-========================================================= */
-
-async function ping(message) {
-
-    const ping =
-        message.client.ws.ping;
-
-    await message.reply(
-        `🏓 **Pong!** ${ping}ms`
-    );
-}
-
-async function help(message, commands, prefix) {
-  const embed = new EmbedBuilder()
-    .setTitle("🐾 Mitty • Centro de Ayuda")
-    .setDescription(
-      `¡Hola! Soy **Mitty** 💗\n\n` +
-      `Mis interacciones funcionan respondiendo al mensaje de otro usuario.\n\n` +
-      `💡 **¿Cómo usar una interacción?**\n` +
-      `1️⃣ Responde al mensaje de la persona.\n` +
-      `2️⃣ Escribe el comando.\n\n` +
-      `Ejemplo:\n` +
-      `> Responde al mensaje de alguien y escribe \`${prefix}hug\`\n\n` +
-      `━━━━━━━━━━━━━━━━━━`
-    )
-    .addFields(
-      {
-        name: "💞 Interacciones",
-        value:
-          "🤗 **hug** — Dar un abrazo\n" +
-          "🫳 **pat** — Dar palmaditas\n" +
-          "👉 **boop** — Dar un boop\n" +
-          "🫂 **cuddle** — Acurrucarse\n" +
-          "👉 **poke** — Dar un poke\n" +
-          "🐱 **meow** — Maullar",
-        inline: false
-      },
-      {
-        name: "📝 Ejemplo de uso",
-        value:
-          `Responde a un mensaje y escribe \`${prefix}pat\`.\n` +
-          `Mitty detectará automáticamente a quién va dirigida la interacción.`,
-        inline: false
-      },
-      {
-        name: "🛠️ Utilidades",
-        value:
-          `🏓 **${prefix}ping** — Comprueba si Mitty está funcionando.\n` +
-          `📖 **${prefix}help** — Muestra este menú.`,
-        inline: false
-      }
-    )
-    .setFooter({
-      text: "🐾 Mitty • ¡Diviértete interactuando!"
-    });
-
-  await message.reply({
-    embeds: [embed]
-  });
-}
-
-/* =========================================================
-   INTERACCIONES
-========================================================= */
-
-async function hug(message) {
-
-    await sendInteraction({
-
-        message,
-
-        category: "Hug",
-
-        actionText:
-            "le dio un abrazo a",
-
-        buttonText:
-            "Devolver un abrazo"
-
-    });
-}
-
-async function pat(message) {
-
-    await sendInteraction({
-
-        message,
-
-        category: "Pat",
-
-        actionText:
-            "le dio palmaditas a",
-
-        buttonText:
-            "Devolver palmaditas"
-
-    });
-}
-
-async function boop(message) {
-
-    await sendInteraction({
-
-        message,
-
-        category: "Boop",
-
-        actionText:
-            "le hizo boop a",
-
-        buttonText:
-            "Devolver boop"
-
-    });
-}
-
-async function cuddle(message) {
-
-    await sendInteraction({
-
-        message,
-
-        category: "Cuddle",
-
-        actionText:
-            "se acurrucó con",
-
-        buttonText:
-            "Devolver acurrucón"
-
-    });
-}
-
-async function poke(message) {
-
-    await sendInteraction({
-
-        message,
-
-        category: "Poke",
-
-        actionText:
-            "le hizo poke a",
-
-        buttonText:
-            "Devolver poke"
-
-    });
-}
-
-async function meow(message) {
-
-    await sendInteraction({
-
-        message,
-
-        category: "Meow",
-
-        actionText:
-            "le maulló a",
-
-        buttonText:
-            "Devolver maullido"
-
-    });
-}
-
-async function wave(message) {
-    await sendInteraction({
-        message,
-        category: "Wave",
-        actionText: "saludó a",
-        buttonText: "Devolver saludo"
-    });
-}
-
-async function highfive(message) {
-    await sendInteraction({
-        message,
-        category: "Highfive",
-        actionText: "chocó los cinco con",
-        buttonText: "Devolver high five"
-    });
-}
-
-async function dance(message) {
-    await sendInteraction({
-        message,
-        category: "Dance",
-        actionText: "bailó con",
-        buttonText: "Bailar también"
-    });
-}
-
-async function happy(message) {
-    await sendInteraction({
-        message,
-        category: "Happy",
-        actionText: "celebró con",
-        buttonText: "Celebrar también"
-    });
-}
-
-async function bonk(message) {
-    await sendInteraction({
-        message,
-        category: "Bonk",
-        actionText: "le dio un bonk a",
-        buttonText: "Devolver bonk"
-    });
-}
-
-async function snuggle(message) {
-    await sendInteraction({
-        message,
-        category: "Snuggle",
-        actionText: "se acurrucó con",
-        buttonText: "Devolver acurrucón"
-    });
-}
-
-async function blep(message) {
-    await sendInteraction({
-        message,
-        category: "Blep",
-        actionText: "le hizo blep a",
-        buttonText: "Devolver blep"
-    });
-}
-
-async function spin(message) {
-    await sendInteraction({
-        message,
-        category: "Spin",
-        actionText: "dio vueltas con",
-        buttonText: "Dar vueltas también"
-    });
-}
-
-async function sleep(message) {
-    await sendInteraction({
-        message,
-        category: "Sleep",
-        actionText: "se quedó dormido junto a",
-        buttonText: "Dormir también"
-    });
-}
-
-async function nom(message) {
-    await sendInteraction({
-        message,
-        category: "Nom",
-        actionText: "compartió comida con",
-        buttonText: "Devolver nom"
-    });
-}
 
 // =========================================================
-// 👤 COMANDO M;PROFILE
+// ⚙️ EJECUTAR COMANDO
 // =========================================================
 
-async function profile(message, targetUser) {
-
-    const user =
-        targetUser || message.author;
-
-
-    // =====================================================
-    // 💾 OBTENER DATOS
-    // =====================================================
-
-    const data =
-        getProfile(user.id);
-
-
-    // =====================================================
-    // 👤 NOMBRE
-    // =====================================================
-
-    const member =
-        message.guild?.members.cache.get(
-            user.id
-        );
-
-    const displayName =
-        member?.displayName ||
-        user.globalName ||
-        user.username;
-
-
-    // =====================================================
-    // 💞 CONTADORES DE INTERACCIONES
-    // =====================================================
-
-    const totalGiven =
-        Object.values(
-            data.interactions.given
-        ).reduce(
-            (total, amount) =>
-                total + amount,
-            0
-        );
-
-    const totalReceived =
-        Object.values(
-            data.interactions.received
-        ).reduce(
-            (total, amount) =>
-                total + amount,
-            0
-        );
-
-
-    // =====================================================
-    // 🖼️ EMBED DEL PERFIL
-    // =====================================================
-
-    const embed =
-        new EmbedBuilder()
-
-            .setColor(0xff9fcf)
-
-            .setAuthor({
-
-                name:
-                    `Perfil de ${displayName}`,
-
-                iconURL:
-                    user.displayAvatarURL({
-                        extension: "png",
-                        size: 256
-                    })
-
-            })
-
-            .setThumbnail(
-                user.displayAvatarURL({
-                    extension: "png",
-                    size: 512
-                })
-            )
-
-            .setDescription(
-                `👤 ${user}\n\n` +
-
-                `💗 **Estado:** ` +
-                `${data.social.status}\n` +
-
-                `⭐ **Stars:** ` +
-                `${data.stars}`
-            )
-
-            // =================================================
-            // 💞 INTERACCIONES
-            // =================================================
-
-            .addFields({
-
-                name:
-                    "💞 Interacciones",
-
-                value:
-                    `📤 Enviadas: **${totalGiven}**\n` +
-                    `📥 Recibidas: **${totalReceived}**`,
-
-                inline: true
-
-            })
-
-            // =================================================
-            // 🎞️ GIFS
-            // =================================================
-
-            .addFields({
-
-                name:
-                    "🎞️ GIFs",
-
-                value:
-                    `📤 Enviados: **${data.gifs.sent}**\n` +
-                    `📥 Recibidos: **${data.gifs.received}**`,
-
-                inline: true
-
-            })
-
-            // =================================================
-            // 📊 ESTADÍSTICAS
-            // =================================================
-
-            .addFields({
-
-                name:
-                    "📊 Estadísticas",
-
-                value:
-                    `💬 Mensajes: **${data.stats.messages}**\n` +
-                    `⚙️ Comandos: **${data.stats.commands}**\n` +
-                    `📝 Resúmenes: **${data.stats.summaries}**`,
-
-                inline: false
-
-            })
-
-            .setFooter({
-
-                text:
-                    "🐾 Mitty • Perfil"
-
-            })
-
-            .setTimestamp();
-
-
-    // =====================================================
-    // 📤 ENVIAR PERFIL
-    // =====================================================
-
-    await message.reply({
-
-        embeds: [
-            embed
-        ]
-
-    });
-
-}
-
-/* =========================================================
-   BOTONES
-========================================================= */
-
-export async function handleButton(interaction) {
-
-    if (!interaction.isButton()) {
-        return false;
-    }
-
-    const id =
-        interaction.customId;
-
-    if (!id.startsWith("mitty_")) {
-        return false;
-    }
-
-    /* -----------------------------------------------
-       BOTÓN EXPIRADO
-    ------------------------------------------------ */
-
-    if (id.startsWith("mitty_expired_")) {
-
-        await interaction.reply({
-
-            content:
-                "⏰ Este botón ya expiró.",
-
-            ephemeral: true
-
-        });
-
-        return true;
-    }
-
-    /* -----------------------------------------------
-       FORMATO:
-
-       mitty_categoria_autor_objetivo_timestamp
-    ------------------------------------------------ */
-
-    const parts =
-        id.split("_");
-
-    if (parts.length !== 5) {
-
-        await interaction.reply({
-
-            content:
-                "❌ Este botón no es válido.",
-
-            ephemeral: true
-
-        });
-
-        return true;
-    }
-
-    const category =
-        parts[1];
-
-    const authorId =
-        parts[2];
-
-    const targetId =
-        parts[3];
-
-    const createdAt =
-        Number(parts[4]);
-
-    /* -----------------------------------------------
-       COMPROBAR EXPIRACIÓN
-    ------------------------------------------------ */
-
-    if (
-        !Number.isFinite(createdAt) ||
-        Date.now() - createdAt >= 120000
-    ) {
-
-        await interaction.reply({
-
-            content:
-                "⏰ Este botón ya expiró.",
-
-            ephemeral: true
-
-        });
-
-        return true;
-    }
-
-    /* -----------------------------------------------
-       SOLO EL OBJETIVO PUEDE DEVOLVER
-    ------------------------------------------------ */
-
-    if (
-        interaction.user.id !== targetId
-    ) {
-
-        await interaction.reply({
-
-            content:
-                "💗 Este botón es solamente para la persona que recibió la interacción.",
-
-            ephemeral: true
-
-        });
-
-        return true;
-    }
-
-    /* -----------------------------------------------
-       CATEGORÍA
-    ------------------------------------------------ */
-
-    const categoryMap = {
-
-        hug: "Hug",
-        pat: "Pat",
-        boop: "Boop",
-        cuddle: "Cuddle",
-        poke: "Poke",
-        meow: "Meow",
-        Wave: "Wave",
-        Highfive: "Highfive",
-        Dance: "Dance",
-        Happy: "Happy",
-        Bonk: "Bonk",
-        Snuggle: "Snuggle",
-        Blep: "Blep",
-        Spin: "Spin",
-        Sleep: "Sleep",
-        Nom: "Nom"
-
-    };
-
-    const realCategory =
-        categoryMap[category];
-
-    if (!realCategory) {
-
-        await interaction.reply({
-
-            content:
-                "❌ Interacción desconocida.",
-
-            ephemeral: true
-
-        });
-
-        return true;
-    }
-
-    /* -----------------------------------------------
-       NUEVO GIF
-    ------------------------------------------------ */
-
-    const gif =
-        await getRandomGif(
-            realCategory
-        );
-
-    if (!gif) {
-
-        await interaction.reply({
-
-            content:
-                "😿 No pude conseguir otro GIF ahora mismo.",
-
-            ephemeral: true
-
-        });
-
-        return true;
-    }
-
-    /* -----------------------------------------------
-       TEXTO
-    ------------------------------------------------ */
-
-    const actionText = {
-
-        Hug:
-            "devolvió el abrazo a",
-
-        Pat:
-            "devolvió las palmaditas a",
-
-        Boop:
-            "devolvió el boop a",
-
-        Cuddle:
-            "devolvió el acurrucón a",
-
-        Poke:
-            "devolvió el poke a",
-
-        Meow:
-            "devolvió el maullido a"
-
-    };
-
-    /* -----------------------------------------------
-       EMBED DE RESPUESTA
-    ------------------------------------------------ */
-
-    const embed =
-        new EmbedBuilder()
-            .setColor(0xffb6d9)
-            .setDescription(
-                `${interaction.user} ${actionText[realCategory]} <@${authorId}>!`
-            )
-            .setImage(gif)
-            .setFooter({
-                text: "— Mitty 💗"
-            })
-            .setTimestamp();
-
-    /* -----------------------------------------------
-       ACTUALIZAR MENSAJE
-    ------------------------------------------------ */
-
-    await interaction.update({
-
-        embeds: [embed],
-
-        components: []
-
-    });
-
-    return true;
-}
-
-/* =========================================================
-   HANDLER PRINCIPAL
-========================================================= */
-
-export async function handleCommand({
-
+async function handleCommand(
     message,
     commandName,
-    args,
-    commands,
-    config,
-    prefix,
-    ownerId,
-    getNextStatus,
-    getNextThinking,
-    reloadStatus
+    args = []
+) {
 
-}) {
+    const result =
+        findCommand(commandName);
 
-    if (message.author.bot) {
+
+    // -----------------------------------------------------
+    // ❌ NO EXISTE
+    // -----------------------------------------------------
+
+    if (!result) {
+
         return false;
+
     }
 
-    const command =
-        String(commandName || "")
-            .toLowerCase();
+
+    const {
+        name,
+        command,
+        fileName,
+        group
+    } = result;
+
+
+    console.log(
+        `[MITTY] ▶ ${name} | ${fileName}`
+    );
+
 
     try {
 
-        switch (command) {
+        switch (command.type) {
 
-            /* -------------------------
-               BÁSICOS
-            ------------------------- */
 
-            case "ping":
-                await ping(message);
-                return true;
+            // =============================================
+            // 💞 INTERACCIONES
+            // =============================================
 
-            case "help":
-            case "ayuda":
-                await help(
+            case "interaction":
+
+                return await interactionSystem(
                     message,
-                    commands,
-                    prefix
+                    name,
+                    command,
+                    group,
+                    args
                 );
-                return true;
-                
-case "profile":
-case "perfil": {
 
-    let targetUser =
-        message.author;
 
-    if (
-        message.mentions.users.size > 0
-    ) {
+            // =============================================
+            // 👤 PERFIL
+            // =============================================
 
-        targetUser =
-            message.mentions.users.first();
+            case "profile":
 
-    }
+                return await profileSystem(
+                    message,
+                    name,
+                    command,
+                    group,
+                    args
+                );
 
-    await profile(
-        message,
-        targetUser
-    );
 
-    return true;
+            // =============================================
+            // 🛠️ UTILIDAD
+            // =============================================
 
-}
-                
-            /* -------------------------
-               INTERACCIONES
-            ------------------------- */
+            case "utility":
 
-            case "hug":
-            case "abrazo":
-                await hug(message);
-                return true;
+                return await utilitySystem(
+                    message,
+                    name,
+                    command,
+                    group,
+                    args
+                );
 
-            case "pat":
-            case "palmaditas":
-                await pat(message);
-                return true;
 
-            case "boop":
-                await boop(message);
-                return true;
+            // =============================================
+            // 🛡️ MODERACIÓN
+            // =============================================
 
-            case "cuddle":
-            case "acurrucon":
-            case "acurrucón":
-                await cuddle(message);
-                return true;
+            case "moderation":
 
-            case "poke":
-                await poke(message);
-                return true;
+                return await moderationSystem(
+                    message,
+                    name,
+                    command,
+                    group,
+                    args
+                );
 
-            case "meow":
-            case "miau":
-                await meow(message);
-                return true;
 
-            case "wave":
-    await wave(message);
-    return true;
+            // =============================================
+            // 🤖 IA
+            // =============================================
 
-case "highfive":
-case "high":
-    await highfive(message);
-    return true;
+            case "ai":
 
-case "dance":
-    await dance(message);
-    return true;
+                return await aiSystem(
+                    message,
+                    name,
+                    command,
+                    group,
+                    args
+                );
 
-case "happy":
-    await happy(message);
-    return true;
 
-case "bonk":
-    await bonk(message);
-    return true;
-
-case "snuggle":
-    await snuggle(message);
-    return true;
-
-case "blep":
-    await blep(message);
-    return true;
-
-case "spin":
-    await spin(message);
-    return true;
-
-case "sleep":
-    await sleep(message);
-    return true;
-
-case "nom":
-    await nom(message);
-    return true;
-
-            /* -------------------------
-               COMANDO DESCONOCIDO
-            ------------------------- */
+            // =============================================
+            // ❓ TIPO DESCONOCIDO
+            // =============================================
 
             default:
+
+                console.warn(
+                    `[MITTY] ⚠️ Tipo desconocido: ${command.type}`
+                );
+
                 return false;
+
         }
 
     } catch (error) {
 
         console.error(
-            `[MITTY] ❌ Error ejecutando ${command}:`,
+            `[MITTY] ❌ Error en ${name}:`,
             error
         );
 
-        await message.reply(
-            "🐾 ¡Ay! Algo salió mal mientras intentaba hacer eso."
-        ).catch(() => {});
+        try {
 
-        return false;
+            await message.reply(
+                "❌ Ocurrió un error al ejecutar este comando."
+            );
+
+        } catch {}
+
+        return true;
     }
+
 }
 
-/* =========================================================
-   EXPORTACIONES
-========================================================= */
+
+// =========================================================
+// 💞 SISTEMA DE INTERACCIONES
+// =========================================================
+
+async function interactionSystem(
+    message,
+    name,
+    command,
+    group,
+    args
+) {
+
+    // =====================================================
+    // AQUÍ MIGRAREMOS LA LÓGICA ANTIGUA DE MITTY
+    //
+    // GIF
+    // GIPHY
+    // TARGET
+    // BOTONES
+    // CONTADORES
+    // RESPUESTAS
+    // EXPIRACIÓN DE BOTONES
+    // ETC.
+    // =====================================================
+
+    console.log(
+        `[MITTY] 💞 Interacción: ${name}`
+    );
+
+    return true;
+}
+
+
+// =========================================================
+// 👤 SISTEMA DE PERFIL
+// =========================================================
+
+async function profileSystem(
+    message,
+    name,
+    command,
+    group,
+    args
+) {
+
+    console.log(
+        `[MITTY] 👤 Perfil: ${name}`
+    );
+
+    return true;
+}
+
+
+// =========================================================
+// 🛠️ SISTEMA DE UTILIDADES
+// =========================================================
+
+async function utilitySystem(
+    message,
+    name,
+    command,
+    group,
+    args
+) {
+
+    console.log(
+        `[MITTY] 🛠️ Utilidad: ${name}`
+    );
+
+    return true;
+}
+
+
+// =========================================================
+// 🛡️ SISTEMA DE MODERACIÓN
+// =========================================================
+
+async function moderationSystem(
+    message,
+    name,
+    command,
+    group,
+    args
+) {
+
+    console.log(
+        `[MITTY] 🛡️ Moderación: ${name}`
+    );
+
+    return true;
+}
+
+
+// =========================================================
+// 🤖 SISTEMA DE IA
+// =========================================================
+
+async function aiSystem(
+    message,
+    name,
+    command,
+    group,
+    args
+) {
+
+    console.log(
+        `[MITTY] 🤖 IA: ${name}`
+    );
+
+    return true;
+}
+
+
+// =========================================================
+// 📤 EXPORTACIONES
+// =========================================================
 
 export {
-    hug,
-    pat,
-    boop,
-    cuddle,
-    poke,
-    meow
+    handleCommand,
+    findCommand,
+    loadAllCommands
 };
