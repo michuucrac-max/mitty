@@ -372,75 +372,53 @@ async function ping(message) {
     );
 }
 
-async function help(
-    message,
-    commands,
-    prefix
-) {
-
-    const embed =
-        new EmbedBuilder()
-            .setColor(0xff9fcf)
-            .setTitle("📖 Ayuda de Mitty")
-            .setDescription(
-                `Usa \`${prefix}comando\` para ejecutar un comando.`
-            );
-
-    if (
-        Array.isArray(commands) &&
-        commands.length
-    ) {
-
-        embed.addFields({
-            name: "🐾 Comandos",
-            value:
-                commands
-                    .map(
-                        command =>
-                            `\`${prefix}${command}\``
-                    )
-                    .join(", ")
-                    .slice(0, 1024)
-        });
-
-    } else if (
-        commands &&
-        typeof commands === "object"
-    ) {
-
-        const names =
-            Object.keys(commands);
-
-        if (names.length) {
-
-            embed.addFields({
-                name: "🐾 Comandos",
-                value:
-                    names
-                        .map(
-                            command =>
-                                `\`${prefix}${command}\``
-                        )
-                        .join(", ")
-                        .slice(0, 1024)
-            });
-        }
-    }
-
-    embed.addFields({
-
-        name: "💗 Interacciones",
-
+async function help(message, commands, prefix) {
+  const embed = new EmbedBuilder()
+    .setTitle("🐾 Mitty • Centro de Ayuda")
+    .setDescription(
+      `¡Hola! Soy **Mitty** 💗\n\n` +
+      `Mis interacciones funcionan respondiendo al mensaje de otro usuario.\n\n` +
+      `💡 **¿Cómo usar una interacción?**\n` +
+      `1️⃣ Responde al mensaje de la persona.\n` +
+      `2️⃣ Escribe el comando.\n\n` +
+      `Ejemplo:\n` +
+      `> Responde al mensaje de alguien y escribe \`${prefix}hug\`\n\n` +
+      `━━━━━━━━━━━━━━━━━━`
+    )
+    .addFields(
+      {
+        name: "💞 Interacciones",
         value:
-            "`m;hug` · `m;pat` · `m;boop`\n" +
-            "`m;cuddle` · `m;poke` · `m;meow`\n\n" +
-            "💡 Responde al mensaje de alguien para usar una interacción."
-
+          "🤗 **hug** — Dar un abrazo\n" +
+          "🫳 **pat** — Dar palmaditas\n" +
+          "👉 **boop** — Dar un boop\n" +
+          "🫂 **cuddle** — Acurrucarse\n" +
+          "👉 **poke** — Dar un poke\n" +
+          "🐱 **meow** — Maullar",
+        inline: false
+      },
+      {
+        name: "📝 Ejemplo de uso",
+        value:
+          `Responde a un mensaje y escribe \`${prefix}pat\`.\n` +
+          `Mitty detectará automáticamente a quién va dirigida la interacción.`,
+        inline: false
+      },
+      {
+        name: "🛠️ Utilidades",
+        value:
+          `🏓 **${prefix}ping** — Comprueba si Mitty está funcionando.\n` +
+          `📖 **${prefix}help** — Muestra este menú.`,
+        inline: false
+      }
+    )
+    .setFooter({
+      text: "🐾 Mitty • ¡Diviértete interactuando!"
     });
 
-    await message.reply({
-        embeds: [embed]
-    });
+  await message.reply({
+    embeds: [embed]
+  });
 }
 
 /* =========================================================
