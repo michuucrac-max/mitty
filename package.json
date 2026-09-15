@@ -1,14 +1,14 @@
 {
-"name": "softti-tales-bot",
-"version": "1.2.1",
-"description": "Softti Tales — Bot kawaii con IA, AutoMod, imágenes y comandos (sin música)",
+"name": "mitty",
+"version": "0.8.0",
+"description": "mitty — Bot kawaii con IA, AutoMod, imágenes y comandos (sin música)",
 "main": "index.js",
 "type": "module",
 "scripts": {
 "start": "node index.js",
 "dev": "nodemon index.js"
 },
-"author": "@Elmichu0759",
+"author": "nachi",
 "license": "MIT",
 "dependencies": {
 "discord.js": "^14.15.3",
