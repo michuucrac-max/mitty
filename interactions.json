@@ -1,0 +1,335 @@
+{
+    "system": "interactions",
+
+    "settings": {
+        "requireReply": true,
+        "allowSelf": false,
+        "gifProvider": "giphy",
+        "gifRating": "g",
+        "gifLimit": 20,
+        "buttonExpiration": 120000
+    },
+
+    "commands": {
+
+        "hug": {
+            "type": "interaction",
+            "aliases": ["abrazo"],
+            "enabled": true,
+
+            "emoji": "🤗",
+
+            "gif": {
+                "search": "cute furry hug",
+                "fallback": "anime hug"
+            },
+
+            "texts": {
+                "action": "le dio un abrazo a",
+                "button": "🤗 Devolver abrazo",
+                "return": "devolvió el abrazo a"
+            }
+        },
+
+
+        "pat": {
+            "type": "interaction",
+            "aliases": ["palmaditas"],
+            "enabled": true,
+
+            "emoji": "🫳",
+
+            "gif": {
+                "search": "cute furry pat",
+                "fallback": "anime headpat"
+            },
+
+            "texts": {
+                "action": "le dio palmaditas a",
+                "button": "🫳 Devolver palmaditas",
+                "return": "devolvió las palmaditas a"
+            }
+        },
+
+
+        "boop": {
+            "type": "interaction",
+            "aliases": [],
+            "enabled": true,
+
+            "emoji": "👉",
+
+            "gif": {
+                "search": "cute furry boop",
+                "fallback": "anime boop"
+            },
+
+            "texts": {
+                "action": "le hizo boop a",
+                "button": "👉 Devolver boop",
+                "return": "devolvió el boop a"
+            }
+        },
+
+
+        "cuddle": {
+            "type": "interaction",
+            "aliases": ["acurrucon", "acurrucón"],
+            "enabled": true,
+
+            "emoji": "🫂",
+
+            "gif": {
+                "search": "cute furry cuddle",
+                "fallback": "anime cuddle"
+            },
+
+            "texts": {
+                "action": "se acurrucó con",
+                "button": "🫂 Devolver acurrucón",
+                "return": "devolvió el acurrucón a"
+            }
+        },
+
+
+        "poke": {
+            "type": "interaction",
+            "aliases": [],
+            "enabled": true,
+
+            "emoji": "👉",
+
+            "gif": {
+                "search": "cute furry poke",
+                "fallback": "anime poke"
+            },
+
+            "texts": {
+                "action": "le dio un poke a",
+                "button": "👉 Devolver poke",
+                "return": "devolvió el poke a"
+            }
+        },
+
+
+        "meow": {
+            "type": "interaction",
+            "aliases": ["miau"],
+            "enabled": true,
+
+            "emoji": "🐱",
+
+            "gif": {
+                "search": "cute furry meow",
+                "fallback": "anime cat meow"
+            },
+
+            "texts": {
+                "action": "le maulló a",
+                "button": "🐱 Devolver miau",
+                "return": "le devolvió el miau a"
+            }
+        },
+
+
+        "wave": {
+            "type": "interaction",
+            "aliases": ["saludar"],
+            "enabled": true,
+
+            "emoji": "👋",
+
+            "gif": {
+                "search": "cute furry wave",
+                "fallback": "anime wave"
+            },
+
+            "texts": {
+                "action": "saludó a",
+                "button": "👋 Devolver saludo",
+                "return": "devolvió el saludo a"
+            }
+        },
+
+
+        "highfive": {
+            "type": "interaction",
+            "aliases": ["high"],
+            "enabled": true,
+
+            "emoji": "🙌",
+
+            "gif": {
+                "search": "cute furry high five",
+                "fallback": "anime high five"
+            },
+
+            "texts": {
+                "action": "chocó los cinco con",
+                "button": "🙌 Chocar los cinco",
+                "return": "chocó los cinco con"
+            }
+        },
+
+
+        "dance": {
+            "type": "interaction",
+            "aliases": ["bailar"],
+            "enabled": true,
+
+            "emoji": "💃",
+
+            "gif": {
+                "search": "cute furry dance",
+                "fallback": "anime dance"
+            },
+
+            "texts": {
+                "action": "bailó con",
+                "button": "💃 Bailar también",
+                "return": "bailó con"
+            }
+        },
+
+
+        "happy": {
+            "type": "interaction",
+            "aliases": ["feliz"],
+            "enabled": true,
+
+            "emoji": "✨",
+
+            "gif": {
+                "search": "cute furry happy",
+                "fallback": "anime happy"
+            },
+
+            "texts": {
+                "action": "compartió su felicidad con",
+                "button": "✨ Compartir felicidad",
+                "return": "compartió su felicidad con"
+            }
+        },
+
+
+        "bonk": {
+            "type": "interaction",
+            "aliases": [],
+            "enabled": true,
+
+            "emoji": "🔨",
+
+            "gif": {
+                "search": "cute furry bonk",
+                "fallback": "anime bonk"
+            },
+
+            "texts": {
+                "action": "le hizo un bonk caricaturesco a",
+                "button": "🔨 Devolver bonk",
+                "return": "devolvió el bonk a"
+            }
+        },
+
+
+        "snuggle": {
+            "type": "interaction",
+            "aliases": [],
+            "enabled": true,
+
+            "emoji": "🐾",
+
+            "gif": {
+                "search": "cute furry snuggle",
+                "fallback": "anime snuggle"
+            },
+
+            "texts": {
+                "action": "se acurrucó junto a",
+                "button": "🐾 Acurrucarse también",
+                "return": "se acurrucó junto a"
+            }
+        },
+
+
+        "blep": {
+            "type": "interaction",
+            "aliases": [],
+            "enabled": true,
+
+            "emoji": "😛",
+
+            "gif": {
+                "search": "cute furry blep",
+                "fallback": "anime blep"
+            },
+
+            "texts": {
+                "action": "le hizo blep a",
+                "button": "😛 Devolver blep",
+                "return": "devolvió el blep a"
+            }
+        },
+
+
+        "spin": {
+            "type": "interaction",
+            "aliases": ["girar"],
+            "enabled": true,
+
+            "emoji": "🌀",
+
+            "gif": {
+                "search": "cute furry spin",
+                "fallback": "anime spin"
+            },
+
+            "texts": {
+                "action": "dio unas vueltas junto a",
+                "button": "🌀 Girar también",
+                "return": "dio unas vueltas junto a"
+            }
+        },
+
+
+        "sleep": {
+            "type": "interaction",
+            "aliases": ["dormir"],
+            "enabled": true,
+
+            "emoji": "😴",
+
+            "gif": {
+                "search": "cute furry sleep",
+                "fallback": "anime sleep"
+            },
+
+            "texts": {
+                "action": "se quedó dormido junto a",
+                "button": "😴 Dormirse también",
+                "return": "se quedó dormido junto a"
+            }
+        },
+
+
+        "nom": {
+            "type": "interaction",
+            "aliases": [],
+            "enabled": true,
+
+            "emoji": "🍴",
+
+            "gif": {
+                "search": "cute furry nom",
+                "fallback": "anime nom"
+            },
+
+            "texts": {
+                "action": "le hizo nom a",
+                "button": "🍴 Devolver nom",
+                "return": "devolvió el nom a"
+            }
+        }
+
+    }
+}
