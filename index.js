@@ -1,23 +1,6 @@
 // =========================================================
-// 🐾 MITTY — ARCHIVO PRINCIPAL
+// 🐾 MITTY — INDEX.JS
 // =========================================================
-//
-// Este es el punto de entrada del bot.
-//
-// Ya NO utiliza:
-// ❌ cmd.json
-// ❌ comandos antiguos
-// ❌ sistemas de comandos del index anterior
-//
-// Todo pasa por:
-//
-// index.js
-//      ↓
-// logic.js
-//      ↓
-// JSON correspondiente
-// =========================================================
-
 
 import {
     Client,
@@ -29,7 +12,8 @@ import {
 import express from "express";
 
 import {
-    handleCommand
+    handleCommand,
+    handleButton
 } from "./logic.js";
 
 
@@ -51,7 +35,7 @@ const GIF_TOKEN =
 
 
 // =========================================================
-// 🚨 COMPROBAR CONFIGURACIÓN
+// 🚨 COMPROBAR TOKEN
 // =========================================================
 
 if (!TOKEN) {
@@ -61,15 +45,6 @@ if (!TOKEN) {
     );
 
     process.exit(1);
-}
-
-
-if (!GIF_TOKEN) {
-
-    console.warn(
-        "[MITTY] ⚠️ Falta GIF_TOKEN."
-    );
-
 }
 
 
@@ -96,7 +71,7 @@ const client =
 
 
 // =========================================================
-// 🌐 EXPRESS
+// 🌐 SERVIDOR WEB
 // =========================================================
 
 const app =
@@ -139,7 +114,6 @@ client.once(
             `[MITTY] 🐾 Conectado como ${readyClient.user.tag}`
         );
 
-
         readyClient.user.setActivity(
             "m;help",
             {
@@ -160,18 +134,12 @@ client.on(
     Events.MessageCreate,
     async message => {
 
-        // -----------------------------------------------
-        // IGNORAR BOTS
-        // -----------------------------------------------
-
-        if (message.author.bot) {
+        if (
+            message.author.bot
+        ) {
             return;
         }
 
-
-        // -----------------------------------------------
-        // PREFIJO
-        // -----------------------------------------------
 
         const PREFIX =
             "m;";
@@ -180,24 +148,17 @@ client.on(
         if (
             !message.content
                 .toLowerCase()
-                .startsWith(
-                    PREFIX
-                )
+                .startsWith(PREFIX)
         ) {
 
             return;
-
         }
 
 
-        // -----------------------------------------------
-        // SEPARAR COMANDO Y ARGUMENTOS
-        // -----------------------------------------------
-
         const content =
-            message.content.slice(
-                PREFIX.length
-            ).trim();
+            message.content
+                .slice(PREFIX.length)
+                .trim();
 
 
         if (!content) {
@@ -210,17 +171,14 @@ client.on(
 
 
         const commandName =
-            parts.shift()
+            parts
+                .shift()
                 .toLowerCase();
 
 
         const args =
             parts;
 
-
-        // -----------------------------------------------
-        // EJECUTAR
-        // -----------------------------------------------
 
         try {
 
@@ -233,7 +191,7 @@ client.on(
         } catch (error) {
 
             console.error(
-                "[MITTY] ❌ Error procesando mensaje:",
+                "[MITTY] ❌ Error ejecutando comando:",
                 error
             );
 
@@ -244,40 +202,75 @@ client.on(
 
 
 // =========================================================
-// 🔘 INTERACCIONES DE DISCORD
+// 🔘 BOTONES
 // =========================================================
 
 client.on(
     Events.InteractionCreate,
     async interaction => {
 
-        // -----------------------------------------------
-        // Por ahora solo dejamos preparado el evento.
-        //
-        // Los botones de las interacciones antiguas
-        // los volveremos a conectar cuando migremos
-        // el sistema de interactions.json.
-        // -----------------------------------------------
-
         if (
             !interaction.isButton()
         ) {
-
             return;
-
         }
 
 
-        console.log(
-            `[MITTY] 🔘 Botón: ${interaction.customId}`
-        );
+        try {
+
+            await handleButton(
+                interaction
+            );
+
+        } catch (error) {
+
+            console.error(
+                "[MITTY] ❌ Error manejando botón:",
+                error
+            );
+
+
+            try {
+
+                if (
+                    interaction.replied ||
+                    interaction.deferred
+                ) {
+
+                    await interaction.followUp({
+
+                        content:
+                            "❌ Ocurrió un error.",
+
+                        ephemeral:
+                            true
+
+                    });
+
+                } else {
+
+                    await interaction.reply({
+
+                        content:
+                            "❌ Ocurrió un error.",
+
+                        ephemeral:
+                            true
+
+                    });
+
+                }
+
+            } catch {}
+
+        }
 
     }
 );
 
 
 // =========================================================
-// 🔑 CONECTAR BOT
+// 🔑 CONECTAR MITTY
 // =========================================================
 
 client.login(
@@ -290,7 +283,11 @@ client.login(
 // =========================================================
 
 export {
+
     client,
+
     OWNER_ID,
+
     GIF_TOKEN
+
 };
