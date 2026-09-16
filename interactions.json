@@ -4,9 +4,15 @@
     "settings": {
         "requireReply": true,
         "allowSelf": false,
+
         "gifProvider": "giphy",
         "gifRating": "g",
+
         "gifLimit": 20,
+
+        "preferredOrientation": "horizontal",
+        "preferredAspectRatio": "16:9",
+
         "buttonExpiration": 120000
     },
 
@@ -16,12 +22,11 @@
             "type": "interaction",
             "aliases": ["abrazo"],
             "enabled": true,
-
             "emoji": "🤗",
 
             "gif": {
-                "search": "cute furry hug",
-                "fallback": "anime hug"
+                "search": "anime hug scene",
+                "fallback": "anime hugging scene"
             },
 
             "texts": {
@@ -31,17 +36,15 @@
             }
         },
 
-
         "pat": {
             "type": "interaction",
             "aliases": ["palmaditas"],
             "enabled": true,
-
             "emoji": "🫳",
 
             "gif": {
-                "search": "cute furry pat",
-                "fallback": "anime headpat"
+                "search": "anime headpat scene",
+                "fallback": "anime pat head scene"
             },
 
             "texts": {
@@ -51,17 +54,15 @@
             }
         },
 
-
         "boop": {
             "type": "interaction",
             "aliases": [],
             "enabled": true,
-
             "emoji": "👉",
 
             "gif": {
-                "search": "cute furry boop",
-                "fallback": "anime boop"
+                "search": "anime boop scene",
+                "fallback": "anime cute boop"
             },
 
             "texts": {
@@ -71,17 +72,15 @@
             }
         },
 
-
         "cuddle": {
             "type": "interaction",
             "aliases": ["acurrucon", "acurrucón"],
             "enabled": true,
-
             "emoji": "🫂",
 
             "gif": {
-                "search": "cute furry cuddle",
-                "fallback": "anime cuddle"
+                "search": "anime cuddle scene",
+                "fallback": "anime cozy cuddle"
             },
 
             "texts": {
@@ -91,17 +90,15 @@
             }
         },
 
-
         "poke": {
             "type": "interaction",
             "aliases": [],
             "enabled": true,
-
             "emoji": "👉",
 
             "gif": {
-                "search": "cute furry poke",
-                "fallback": "anime poke"
+                "search": "anime poke scene",
+                "fallback": "anime funny poke"
             },
 
             "texts": {
@@ -111,17 +108,15 @@
             }
         },
 
-
         "meow": {
             "type": "interaction",
             "aliases": ["miau"],
             "enabled": true,
-
             "emoji": "🐱",
 
             "gif": {
-                "search": "cute furry meow",
-                "fallback": "anime cat meow"
+                "search": "anime cat meow scene",
+                "fallback": "anime cat cute"
             },
 
             "texts": {
@@ -131,17 +126,15 @@
             }
         },
 
-
         "wave": {
             "type": "interaction",
             "aliases": ["saludar"],
             "enabled": true,
-
             "emoji": "👋",
 
             "gif": {
-                "search": "cute furry wave",
-                "fallback": "anime wave"
+                "search": "anime waving scene",
+                "fallback": "anime character waving"
             },
 
             "texts": {
@@ -151,17 +144,15 @@
             }
         },
 
-
         "highfive": {
             "type": "interaction",
             "aliases": ["high"],
             "enabled": true,
-
             "emoji": "🙌",
 
             "gif": {
-                "search": "cute furry high five",
-                "fallback": "anime high five"
+                "search": "anime high five scene",
+                "fallback": "anime characters high five"
             },
 
             "texts": {
@@ -171,17 +162,15 @@
             }
         },
 
-
         "dance": {
             "type": "interaction",
             "aliases": ["bailar"],
             "enabled": true,
-
             "emoji": "💃",
 
             "gif": {
-                "search": "cute furry dance",
-                "fallback": "anime dance"
+                "search": "anime dance scene",
+                "fallback": "anime character dancing"
             },
 
             "texts": {
@@ -191,17 +180,15 @@
             }
         },
 
-
         "happy": {
             "type": "interaction",
             "aliases": ["feliz"],
             "enabled": true,
-
             "emoji": "✨",
 
             "gif": {
-                "search": "cute furry happy",
-                "fallback": "anime happy"
+                "search": "anime happy scene",
+                "fallback": "anime character happy"
             },
 
             "texts": {
@@ -211,17 +198,15 @@
             }
         },
 
-
         "bonk": {
             "type": "interaction",
             "aliases": [],
             "enabled": true,
-
             "emoji": "🔨",
 
             "gif": {
-                "search": "cute furry bonk",
-                "fallback": "anime bonk"
+                "search": "anime bonk funny scene",
+                "fallback": "anime funny bonk"
             },
 
             "texts": {
@@ -231,17 +216,15 @@
             }
         },
 
-
         "snuggle": {
             "type": "interaction",
             "aliases": [],
             "enabled": true,
-
             "emoji": "🐾",
 
             "gif": {
-                "search": "cute furry snuggle",
-                "fallback": "anime snuggle"
+                "search": "anime cozy scene",
+                "fallback": "anime wholesome cuddle"
             },
 
             "texts": {
@@ -251,17 +234,15 @@
             }
         },
 
-
         "blep": {
             "type": "interaction",
             "aliases": [],
             "enabled": true,
-
             "emoji": "😛",
 
             "gif": {
-                "search": "cute furry blep",
-                "fallback": "anime blep"
+                "search": "anime funny face scene",
+                "fallback": "anime cute funny expression"
             },
 
             "texts": {
@@ -271,17 +252,15 @@
             }
         },
 
-
         "spin": {
             "type": "interaction",
             "aliases": ["girar"],
             "enabled": true,
-
             "emoji": "🌀",
 
             "gif": {
-                "search": "cute furry spin",
-                "fallback": "anime spin"
+                "search": "anime spinning scene",
+                "fallback": "anime character spinning"
             },
 
             "texts": {
@@ -291,17 +270,15 @@
             }
         },
 
-
         "sleep": {
             "type": "interaction",
             "aliases": ["dormir"],
             "enabled": true,
-
             "emoji": "😴",
 
             "gif": {
-                "search": "cute furry sleep",
-                "fallback": "anime sleep"
+                "search": "anime sleeping scene",
+                "fallback": "anime character sleeping"
             },
 
             "texts": {
@@ -311,17 +288,15 @@
             }
         },
 
-
         "nom": {
             "type": "interaction",
             "aliases": [],
             "enabled": true,
-
             "emoji": "🍴",
 
             "gif": {
-                "search": "cute furry nom",
-                "fallback": "anime nom"
+                "search": "anime funny eating scene",
+                "fallback": "anime cute eating"
             },
 
             "texts": {
@@ -330,6 +305,5 @@
                 "return": "devolvió el nom a"
             }
         }
-
     }
 }
