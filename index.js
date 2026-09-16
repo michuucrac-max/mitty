@@ -1,5 +1,5 @@
 // =========================================================
-// 🐾 MITTY • ARCHIVO PRINCIPAL
+// 🐾 MITTY • INDEX.JS
 // =========================================================
 
 import {
@@ -14,47 +14,35 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// =========================================================
-// 🟢 BOT LISTO
-// =========================================================
+import {
+    handleCommand,
+    handleButton,
+    initializeProfiles
+} from "./logic.js";
 
-client.once(Events.ClientReady, async readyClient => {
-
-    console.log(
-        `[MITTY] 🐾 Conectado como ${readyClient.user.tag}`
-    );
-
-
-    // =====================================================
-    // ☁️ RECUPERAR DATOS
-    // =====================================================
-
-    await initializeProfiles();
-
-
-    // =====================================================
-    // 🔄 INICIAR ESTADOS
-    // =====================================================
-
-    startStatusRotation(
-        readyClient
-    );
-});
 
 // =========================================================
-// ⚙️ CONFIGURACIÓN
+// 🔐 VARIABLES DE ENTORNO
 // =========================================================
 
 const TOKEN = process.env.TOKEN;
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const OWNER_ID = process.env.OWNER_ID;
 const GIF_TOKEN = process.env.GIF_TOKEN;
 
-const PREFIX = "m;";
+
+// =========================================================
+// ❌ COMPROBACIÓN DEL TOKEN
+// =========================================================
+
+if (!TOKEN) {
+    console.error("[MITTY] ❌ Falta la variable de entorno TOKEN.");
+    process.exit(1);
+}
 
 
 // =========================================================
-// 📁 RUTAS
+// 📁 RUTAS DEL PROYECTO
 // =========================================================
 
 const __filename = fileURLToPath(import.meta.url);
@@ -62,26 +50,34 @@ const __dirname = path.dirname(__filename);
 
 
 // =========================================================
-// 📄 CARGAR STATUS.JSON
+// 📊 STATUS.JSON
 // =========================================================
 
-function loadStatus() {
-    const filePath = path.join(__dirname, "status.json");
+const STATUS_PATH = path.join(__dirname, "status.json");
 
+function loadStatus() {
     try {
-        if (!fs.existsSync(filePath)) {
+        if (!fs.existsSync(STATUS_PATH)) {
             console.warn("[MITTY] ⚠️ No existe status.json.");
+
             return {
                 interval: 30000,
                 statuses: []
             };
         }
 
-        const data = fs.readFileSync(filePath, "utf8");
+        const data = fs.readFileSync(
+            STATUS_PATH,
+            "utf8"
+        );
+
         const status = JSON.parse(data);
 
         if (!Array.isArray(status.statuses)) {
-            console.warn("[MITTY] ⚠️ status.json no contiene una lista de estados.");
+            console.warn(
+                "[MITTY] ⚠️ status.json no contiene una lista válida de estados."
+            );
+
             return {
                 interval: 30000,
                 statuses: []
@@ -91,7 +87,11 @@ function loadStatus() {
         return status;
 
     } catch (error) {
-        console.error("[MITTY] ❌ Error leyendo status.json:", error);
+
+        console.error(
+            "[MITTY] ❌ Error leyendo status.json:",
+            error
+        );
 
         return {
             interval: 30000,
@@ -104,68 +104,18 @@ const statusConfig = loadStatus();
 
 
 // =========================================================
-// 🔐 COMPROBAR TOKEN
+// 🔄 ROTACIÓN DE ESTADOS
 // =========================================================
 
-if (!TOKEN) {
-    console.error("[MITTY] ❌ Falta TOKEN.");
-    process.exit(1);
-}
-
-
-// =========================================================
-// 🤖 CLIENTE DE DISCORD
-// =========================================================
-
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
-});
-
-
-// =========================================================
-// 🌐 SERVIDOR EXPRESS
-// =========================================================
-
-const app = express();
-
-app.get("/", (req, res) => {
-    res.send("🐾 Mitty está online.");
-});
-
-app.listen(PORT, () => {
-    console.log(`[MITTY] 🌐 Servidor activo en puerto ${PORT}`);
-});
-
-
-// =========================================================
-// 🟢 BOT LISTO
-// =========================================================
-
-client.once(Events.ClientReady, readyClient => {
-
-    console.log(
-        `[MITTY] 🐾 Conectado como ${readyClient.user.tag}`
-    );
-
-    startStatusRotation(readyClient);
-});
-
-
-// =========================================================
-// 🔄 ESTADOS ROTATIVOS
-// =========================================================
-
-function startStatusRotation(readyClient) {
+function startStatusRotation(client) {
 
     const statuses = statusConfig.statuses;
 
     if (!statuses.length) {
-        console.warn("[MITTY] ⚠️ No hay estados para rotar.");
+        console.warn(
+            "[MITTY] ⚠️ No hay estados configurados."
+        );
+
         return;
     }
 
@@ -189,9 +139,12 @@ function startStatusRotation(readyClient) {
             ActivityType[status.type] ??
             ActivityType.Watching;
 
-        readyClient.user.setActivity(status.text, {
-            type: activityType
-        });
+        client.user.setActivity(
+            status.text,
+            {
+                type: activityType
+            }
+        );
 
         console.log(
             `[MITTY] 🔄 Estado: ${status.type} ${status.text}`
@@ -204,107 +157,243 @@ function startStatusRotation(readyClient) {
         }
     }
 
+    // Mostrar el primer estado inmediatamente
     updateStatus();
 
     const interval =
         Number(statusConfig.interval) || 30000;
 
-    setInterval(updateStatus, interval);
+    setInterval(
+        updateStatus,
+        interval
+    );
 }
 
 
 // =========================================================
-// 💬 MENSAJES
+// 🤖 CLIENTE DE DISCORD
 // =========================================================
 
-client.on(Events.MessageCreate, async message => {
+const client = new Client({
 
-    if (message.author.bot) return;
+    intents: [
 
-    if (!message.content.toLowerCase().startsWith(PREFIX)) {
-        return;
-    }
+        GatewayIntentBits.Guilds,
 
-    const content = message.content
-        .slice(PREFIX.length)
-        .trim();
+        GatewayIntentBits.GuildMembers,
 
-    if (!content) return;
+        GatewayIntentBits.GuildMessages,
 
-    const parts = content.split(/\s+/);
+        GatewayIntentBits.MessageContent
 
-    const commandName = parts
-        .shift()
-        .toLowerCase();
+    ]
 
-    const args = parts;
-
-    try {
-
-        await handleCommand(
-            message,
-            commandName,
-            args
-        );
-
-    } catch (error) {
-
-        console.error(
-            "[MITTY] ❌ Error ejecutando comando:",
-            error
-        );
-
-    }
 });
 
 
 // =========================================================
-// 🔘 BOTONES
+// 🌐 SERVIDOR EXPRESS
 // =========================================================
 
-client.on(Events.InteractionCreate, async interaction => {
+const app = express();
 
-    if (!interaction.isButton()) return;
+app.get("/", (req, res) => {
 
-    try {
+    res.send("🐾 Mitty está online.");
 
-        await handleButton(interaction);
+});
 
-    } catch (error) {
+app.listen(PORT, () => {
 
-        console.error(
-            "[MITTY] ❌ Error manejando botón:",
-            error
+    console.log(
+        `[MITTY] 🌐 Servidor activo en puerto ${PORT}`
+    );
+
+});
+
+
+// =========================================================
+// 🟢 BOT LISTO
+// =========================================================
+
+client.once(
+    Events.ClientReady,
+    async readyClient => {
+
+        console.log(
+            `[MITTY] 🐾 Conectado como ${readyClient.user.tag}`
         );
+
+        // =====================================================
+        // 💾 CARGAR PERFILES
+        // =====================================================
 
         try {
 
-            if (
-                interaction.replied ||
-                interaction.deferred
-            ) {
+            await initializeProfiles();
 
-                await interaction.followUp({
-                    content: "❌ Ocurrió un error.",
-                    ephemeral: true
-                });
+            console.log(
+                "[MITTY] 💾 Perfiles inicializados correctamente."
+            );
 
-            } else {
+        } catch (error) {
 
-                await interaction.reply({
-                    content: "❌ Ocurrió un error.",
-                    ephemeral: true
-                });
+            console.error(
+                "[MITTY] ❌ Error inicializando perfiles:",
+                error
+            );
 
-            }
+        }
 
-        } catch {}
+        // =====================================================
+        // 🔄 INICIAR ESTADOS
+        // =====================================================
+
+        startStatusRotation(readyClient);
+
     }
-});
+);
 
 
 // =========================================================
-// 🚀 INICIAR MITTY
+// 💬 MENSAJES CON PREFIJO
+// =========================================================
+
+client.on(
+    Events.MessageCreate,
+    async message => {
+
+        // Ignorar otros bots
+        if (message.author.bot) return;
+
+        const PREFIX = "m;";
+
+        // Comprobar prefijo
+        if (
+            !message.content
+                .toLowerCase()
+                .startsWith(PREFIX)
+        ) {
+            return;
+        }
+
+        // =====================================================
+        // ✂️ SEPARAR COMANDO Y ARGUMENTOS
+        // =====================================================
+
+        const content =
+            message.content
+                .slice(PREFIX.length)
+                .trim();
+
+        if (!content) return;
+
+        const parts =
+            content.split(/\s+/);
+
+        const commandName =
+            parts.shift()?.toLowerCase();
+
+        const args = parts;
+
+        if (!commandName) return;
+
+        // =====================================================
+        // ⚙️ EJECUTAR COMANDO
+        // =====================================================
+
+        try {
+
+            await handleCommand(
+                message,
+                commandName,
+                args
+            );
+
+        } catch (error) {
+
+            console.error(
+                "[MITTY] ❌ Error ejecutando comando:",
+                error
+            );
+
+        }
+
+    }
+);
+
+
+// =========================================================
+// 🔘 INTERACCIONES DE DISCORD
+// =========================================================
+
+client.on(
+    Events.InteractionCreate,
+    async interaction => {
+
+        // Por ahora nuestro sistema utiliza botones.
+        if (!interaction.isButton()) {
+            return;
+        }
+
+        try {
+
+            await handleButton(
+                interaction
+            );
+
+        } catch (error) {
+
+            console.error(
+                "[MITTY] ❌ Error manejando botón:",
+                error
+            );
+
+            // =================================================
+            // 🛡️ RESPUESTA DE SEGURIDAD
+            // =================================================
+
+            try {
+
+                if (
+                    interaction.replied ||
+                    interaction.deferred
+                ) {
+
+                    await interaction.followUp({
+
+                        content:
+                            "❌ Ocurrió un error al procesar el botón.",
+
+                        ephemeral: true
+
+                    });
+
+                } else {
+
+                    await interaction.reply({
+
+                        content:
+                            "❌ Ocurrió un error al procesar el botón.",
+
+                        ephemeral: true
+
+                    });
+
+                }
+
+            } catch {
+                // Discord ya pudo haber cerrado la interacción.
+            }
+
+        }
+
+    }
+);
+
+
+// =========================================================
+// 🔐 INICIAR SESIÓN
 // =========================================================
 
 client.login(TOKEN);
