@@ -14,11 +14,32 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import {
-    handleCommand,
-    handleButton
-} from "./logic.js";
+// =========================================================
+// 🟢 BOT LISTO
+// =========================================================
 
+client.once(Events.ClientReady, async readyClient => {
+
+    console.log(
+        `[MITTY] 🐾 Conectado como ${readyClient.user.tag}`
+    );
+
+
+    // =====================================================
+    // ☁️ RECUPERAR DATOS
+    // =====================================================
+
+    await initializeProfiles();
+
+
+    // =====================================================
+    // 🔄 INICIAR ESTADOS
+    // =====================================================
+
+    startStatusRotation(
+        readyClient
+    );
+});
 
 // =========================================================
 // ⚙️ CONFIGURACIÓN
