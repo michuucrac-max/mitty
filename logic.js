@@ -1,6 +1,5 @@
 // =========================================================
-// 🐾 MITTY • MOTOR UNIVERSAL
-// PARTE 1/3
+// 📦 IMPORTACIONES
 // =========================================================
 
 import {
@@ -16,7 +15,6 @@ import {
     loadProfileFromGitHub,
     markProfileDirty
 } from "./githubStorage.js";
-
 
 // =========================================================
 // 📁 ARCHIVOS
