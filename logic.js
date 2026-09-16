@@ -1,53 +1,47 @@
-import fs from "fs";
-import path from "path";
-import fetch from "node-fetch";
+// =========================================================
+// 🐾 MITTY • MOTOR UNIVERSAL
+// PARTE 1/3
+// =========================================================
+
 import {
     EmbedBuilder,
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle
 } from "discord.js";
-import { fileURLToPath } from "url";
+
+import fs from "fs";
+
+import {
+    loadProfileFromGitHub,
+    markProfileDirty
+} from "./githubStorage.js";
 
 
 // =========================================================
-// 📁 CONFIGURACIÓN
+// 📁 ARCHIVOS
 // =========================================================
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const INTERACTIONS_FILE = path.join(
-    __dirname,
-    "interactions.json"
-);
-
-const PROFILE_FILE = path.join(
-    __dirname,
-    "profile.json"
-);
-
-const GIF_TOKEN = process.env.GIF_TOKEN;
+const INTERACTIONS_PATH = "./interactions.json";
+const PROFILE_PATH = "./profile.json";
+const UTILITY_PATH = "./utility.json";
 
 
 // =========================================================
-// 📖 CARGAR INTERACCIONES
+// 📄 CARGAR JSON
 // =========================================================
 
-function loadInteractions() {
+function loadJSON(filePath, fallback = {}) {
 
     try {
 
-        if (!fs.existsSync(INTERACTIONS_FILE)) {
-            return {
-                commands: {},
-                settings: {}
-            };
+        if (!fs.existsSync(filePath)) {
+            return fallback;
         }
 
         return JSON.parse(
             fs.readFileSync(
-                INTERACTIONS_FILE,
+                filePath,
                 "utf8"
             )
         );
@@ -55,195 +49,86 @@ function loadInteractions() {
     } catch (error) {
 
         console.error(
-            "[MITTY] Error leyendo interactions.json:",
+            `[MITTY] ❌ Error leyendo ${filePath}:`,
             error
         );
 
-        return {
+        return fallback;
+    }
+}
+
+
+// =========================================================
+// 💾 GUARDAR JSON
+// =========================================================
+
+function saveJSON(filePath, data) {
+
+    try {
+
+        fs.writeFileSync(
+            filePath,
+            JSON.stringify(
+                data,
+                null,
+                4
+            ),
+            "utf8"
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            `[MITTY] ❌ Error guardando ${filePath}:`,
+            error
+        );
+
+        return false;
+    }
+}
+
+
+// =========================================================
+// ⚙️ CONFIGURACIONES
+// =========================================================
+
+let interactionsConfig =
+    loadJSON(
+        INTERACTIONS_PATH,
+        {
             commands: {},
             settings: {}
-        };
-    }
-}
-
-
-// =========================================================
-// 🔎 BUSCAR INTERACCIÓN
-// =========================================================
-
-function findInteraction(commandName) {
-
-    const data = loadInteractions();
-
-    const search = commandName
-        .toLowerCase()
-        .trim();
-
-    for (
-        const [name, command]
-        of Object.entries(data.commands || {})
-    ) {
-
-        if (
-            name.toLowerCase() === search
-        ) {
-
-            return {
-                name,
-                command,
-                settings: data.settings || {}
-            };
         }
+    );
 
-        const aliases =
-            command.aliases || [];
 
-        if (
-            aliases.some(
-                alias =>
-                    alias.toLowerCase().trim() === search
-            )
-        ) {
-
-            return {
-                name,
-                command,
-                settings: data.settings || {}
-            };
+let utilityConfig =
+    loadJSON(
+        UTILITY_PATH,
+        {
+            commands: {},
+            settings: {}
         }
-    }
-
-    return null;
-}
+    );
 
 
 // =========================================================
-// 🎯 OBTENER OBJETIVO
+// 👤 DATOS DE USUARIOS
 // =========================================================
 
-async function getTargetFromReply(message) {
-
-    if (
-        !message.reference ||
-        !message.reference.messageId
-    ) {
-        return null;
-    }
-
-    try {
-
-        const repliedMessage =
-            await message.channel.messages.fetch(
-                message.reference.messageId
-            );
-
-        return repliedMessage?.author || null;
-
-    } catch (error) {
-
-        console.error(
-            "[MITTY] Error obteniendo objetivo:",
-            error
-        );
-
-        return null;
-    }
-}
-
-
-// =========================================================
-// 🖼️ BUSCAR GIF
-// =========================================================
-
-async function getGIF(search) {
-
-    if (!GIF_TOKEN) {
-        return null;
-    }
-
-    try {
-
-        const url = new URL(
-            "https://api.giphy.com/v1/gifs/search"
-        );
-
-        url.searchParams.set(
-            "api_key",
-            GIF_TOKEN
-        );
-
-        url.searchParams.set(
-            "q",
-            search
-        );
-
-        url.searchParams.set(
-            "rating",
-            "g"
-        );
-
-        url.searchParams.set(
-            "limit",
-            "20"
-        );
-
-        const response =
-            await fetch(
-                url,
-                {
-                    headers: {
-                        "User-Agent":
-                            "Mitty Discord Bot/1.0"
-                    },
-
-                    signal:
-                        AbortSignal.timeout(10000)
-                }
-            );
-
-        if (!response.ok) {
-            return null;
+let profiles =
+    loadJSON(
+        PROFILE_PATH,
+        {
+            users: {}
         }
-
-        const data =
-            await response.json();
-
-        if (
-            !data.data ||
-            data.data.length === 0
-        ) {
-            return null;
-        }
-
-        const gif =
-            data.data[
-                Math.floor(
-                    Math.random() *
-                    data.data.length
-                )
-            ];
-
-        return (
-            gif.images?.original?.url ||
-            gif.images?.downsized?.url ||
-            gif.url ||
-            null
-        );
-
-    } catch (error) {
-
-        console.error(
-            "[MITTY] Error buscando GIF:",
-            error
-        );
-
-        return null;
-    }
-}
+    );
 
 
 // =========================================================
-// 👤 PERFIL POR DEFECTO
+// 🧱 PERFIL PREDETERMINADO
 // =========================================================
 
 function createDefaultProfile() {
@@ -257,18 +142,25 @@ function createDefaultProfile() {
         },
 
         interactions: {
+
             given: {},
+
             received: {}
         },
 
         gifs: {
+
             sent: 0,
+
             received: 0
         },
 
         stats: {
+
             messages: 0,
+
             commands: 0,
+
             summaries: 0
         }
     };
@@ -276,38 +168,60 @@ function createDefaultProfile() {
 
 
 // =========================================================
-// 📖 CARGAR PERFILES
+// 🛡️ ASEGURAR PERFIL
 // =========================================================
 
-function loadProfiles() {
+function ensureProfile(userId) {
 
-    try {
-
-        if (!fs.existsSync(PROFILE_FILE)) {
-
-            return {
-                users: {}
-            };
-        }
-
-        return JSON.parse(
-            fs.readFileSync(
-                PROFILE_FILE,
-                "utf8"
-            )
-        );
-
-    } catch (error) {
-
-        console.error(
-            "[MITTY] Error leyendo profile.json:",
-            error
-        );
-
-        return {
-            users: {}
-        };
+    if (!profiles.users) {
+        profiles.users = {};
     }
+
+
+    if (!profiles.users[userId]) {
+
+        profiles.users[userId] =
+            createDefaultProfile();
+    }
+
+
+    const profile =
+        profiles.users[userId];
+
+
+    profile.stars ??= 0;
+
+
+    profile.social ??= {};
+
+    profile.social.status ??=
+        "Soltero/a";
+
+
+    profile.interactions ??= {};
+
+    profile.interactions.given ??= {};
+
+    profile.interactions.received ??= {};
+
+
+    profile.gifs ??= {};
+
+    profile.gifs.sent ??= 0;
+
+    profile.gifs.received ??= 0;
+
+
+    profile.stats ??= {};
+
+    profile.stats.messages ??= 0;
+
+    profile.stats.commands ??= 0;
+
+    profile.stats.summaries ??= 0;
+
+
+    return profile;
 }
 
 
@@ -315,24 +229,77 @@ function loadProfiles() {
 // 💾 GUARDAR PERFILES
 // =========================================================
 
-function saveProfiles(data) {
+function saveProfiles() {
+
+    const saved =
+        saveJSON(
+            PROFILE_PATH,
+            profiles
+        );
+
+
+    if (saved) {
+
+        markProfileDirty();
+    }
+
+
+    return saved;
+}
+
+
+// =========================================================
+// ☁️ RECUPERAR PERFILES DESDE GITHUB
+// =========================================================
+
+export async function initializeProfiles() {
+
+    const remote =
+        await loadProfileFromGitHub();
+
+
+    if (!remote?.content) {
+
+        console.log(
+            "[MITTY] 💾 Usando profile.json local."
+        );
+
+        return;
+    }
+
 
     try {
 
-        fs.writeFileSync(
-            PROFILE_FILE,
-            JSON.stringify(
-                data,
-                null,
-                4
-            ),
-            "utf8"
-        );
+        const remoteProfiles =
+            JSON.parse(
+                remote.content
+            );
+
+
+        if (
+            remoteProfiles &&
+            typeof remoteProfiles === "object"
+        ) {
+
+            profiles =
+                remoteProfiles;
+
+
+            saveJSON(
+                PROFILE_PATH,
+                profiles
+            );
+
+
+            console.log(
+                "[MITTY] ☁️ Perfil recuperado desde GitHub."
+            );
+        }
 
     } catch (error) {
 
         console.error(
-            "[MITTY] Error guardando profile.json:",
+            "[MITTY] ❌ profile.json remoto inválido:",
             error
         );
     }
@@ -340,301 +307,1127 @@ function saveProfiles(data) {
 
 
 // =========================================================
-// 👤 ASEGURAR PERFIL
+// 👤 OBTENER PERFIL
 // =========================================================
 
-function ensureProfile(data, userId) {
+export function getProfile(userId) {
 
-    if (!data.users[userId]) {
+    return ensureProfile(userId);
+}
 
-        data.users[userId] =
-            createDefaultProfile();
-    }
 
-    const profile =
-        data.users[userId];
+// =========================================================
+// 🔍 BUSCAR INTERACCIÓN
+// =========================================================
 
-    if (!profile.social) {
-        profile.social = {
-            status: "Soltero/a"
+export function findInteraction(commandName) {
+
+    const commands =
+        interactionsConfig.commands || {};
+
+
+    const normalized =
+        commandName.toLowerCase();
+
+
+    if (commands[normalized]) {
+
+        return {
+
+            name: normalized,
+
+            config:
+                commands[normalized]
         };
     }
 
-    if (!profile.interactions) {
-        profile.interactions = {};
-    }
 
-    if (!profile.interactions.given) {
-        profile.interactions.given = {};
-    }
-
-    if (!profile.interactions.received) {
-        profile.interactions.received = {};
-    }
-
-    if (!profile.gifs) {
-        profile.gifs = {};
-    }
-
-    if (
-        typeof profile.gifs.sent !== "number"
+    for (
+        const [name, config]
+        of Object.entries(commands)
     ) {
-        profile.gifs.sent = 0;
+
+        const aliases =
+            config.aliases || [];
+
+
+        if (
+            aliases
+                .map(
+                    alias =>
+                        alias.toLowerCase()
+                )
+                .includes(normalized)
+        ) {
+
+            return {
+
+                name,
+
+                config
+            };
+        }
     }
 
-    if (
-        typeof profile.gifs.received !== "number"
-    ) {
-        profile.gifs.received = 0;
-    }
 
-    if (!profile.stats) {
-        profile.stats = {};
-    }
-
-    return profile;
+    return null;
 }
 
 
 // =========================================================
-// 💞 REGISTRAR INTERACCIÓN
+// 🔄 RECARGAR INTERACTIONS.JSON
 // =========================================================
 
-function registerInteraction(
-    senderId,
-    receiverId,
-    interactionName
+export function loadInteractions() {
+
+    interactionsConfig =
+        loadJSON(
+            INTERACTIONS_PATH,
+            {
+                commands: {},
+                settings: {}
+            }
+        );
+
+
+    return interactionsConfig;
+}
+
+
+// =========================================================
+// ➕ REGISTRAR INTERACCIÓN
+// =========================================================
+
+export function registerInteraction(
+    userId,
+    interactionName,
+    targetId
 ) {
 
-    const data =
-        loadProfiles();
+    const userProfile =
+        ensureProfile(userId);
 
-    const sender =
-        ensureProfile(
-            data,
-            senderId
+
+    const targetProfile =
+        ensureProfile(targetId);
+
+
+    userProfile
+        .interactions
+        .given[interactionName] ??= 0;
+
+
+    userProfile
+        .interactions
+        .given[interactionName]++;
+
+
+    targetProfile
+        .interactions
+        .received[interactionName] ??= 0;
+
+
+    targetProfile
+        .interactions
+        .received[interactionName]++;
+
+
+    userProfile.gifs.sent++;
+
+    targetProfile.gifs.received++;
+
+
+    saveProfiles();
+}
+
+// =========================================================
+// 🐾 MITTY • MOTOR UNIVERSAL
+// PARTE 2/3
+// =========================================================
+
+
+// =========================================================
+// 🎞️ OBTENER GIF DE GIPHY
+// =========================================================
+
+async function getGif(search) {
+
+    const token =
+        process.env.GIF_TOKEN;
+
+
+    if (!token) {
+
+        console.error(
+            "[MITTY] ❌ Falta GIF_TOKEN."
         );
 
-    const receiver =
-        ensureProfile(
-            data,
-            receiverId
+        return null;
+    }
+
+
+    const url =
+        "https://api.giphy.com/v1/gifs/search" +
+        `?api_key=${encodeURIComponent(token)}` +
+        `&q=${encodeURIComponent(search)}` +
+        "&rating=g" +
+        "&limit=20";
+
+
+    try {
+
+        const controller =
+            new AbortController();
+
+
+        const timeout =
+            setTimeout(
+                () => controller.abort(),
+                10000
+            );
+
+
+        const response =
+            await fetch(
+                url,
+                {
+                    method: "GET",
+
+                    headers: {
+                        "User-Agent":
+                            "Mitty Discord Bot/1.0"
+                    },
+
+                    signal:
+                        controller.signal
+                }
+            );
+
+
+        clearTimeout(timeout);
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                `GIPHY ${response.status}`
+            );
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            !data.data ||
+            !data.data.length
+        ) {
+
+            return null;
+        }
+
+
+        const gif =
+            data.data[
+                Math.floor(
+                    Math.random() *
+                    data.data.length
+                )
+            ];
+
+
+        return (
+            gif.images?.original?.url ||
+            gif.images?.downsized?.url ||
+            null
         );
 
-    if (
-        typeof sender.interactions.given[
-            interactionName
-        ] !== "number"
-    ) {
+    } catch (error) {
 
-        sender.interactions.given[
-            interactionName
-        ] = 0;
+        console.error(
+            "[MITTY] ❌ Error obteniendo GIF:",
+            error
+        );
+
+        return null;
     }
-
-    sender.interactions.given[
-        interactionName
-    ]++;
-
-    if (
-        typeof receiver.interactions.received[
-            interactionName
-        ] !== "number"
-    ) {
-
-        receiver.interactions.received[
-            interactionName
-        ] = 0;
-    }
-
-    receiver.interactions.received[
-        interactionName
-    ]++;
-
-    sender.gifs.sent++;
-    receiver.gifs.received++;
-
-    saveProfiles(data);
 }
 
 
 // =========================================================
-// 💞 EJECUTAR INTERACCIÓN
+// 🎯 OBTENER OBJETIVO DEL REPLY
+// =========================================================
+
+async function getTargetFromReply(message) {
+
+    if (!message.reference?.messageId) {
+
+        return null;
+    }
+
+
+    try {
+
+        const replied =
+            await message.channel.messages.fetch(
+                message.reference.messageId
+            );
+
+
+        return replied.author;
+
+    } catch {
+
+        return null;
+    }
+}
+
+
+// =========================================================
+// 🧹 BORRAR MENSAJE DESPUÉS DE UN TIEMPO
+// =========================================================
+
+async function deleteAfter(
+    message,
+    time
+) {
+
+    if (!message) return;
+
+    if (!time || time <= 0) return;
+
+
+    setTimeout(
+        async () => {
+
+            try {
+
+                await message.delete();
+
+            } catch {}
+        },
+        time
+    );
+}
+
+
+// =========================================================
+// 📊 TOTAL DE INTERACCIONES
+// =========================================================
+
+function getInteractionTotal(data) {
+
+    return Object.values(
+        data || {}
+    ).reduce(
+        (total, value) =>
+            total + Number(value || 0),
+        0
+    );
+}
+
+
+// =========================================================
+// 📖 COMANDO HELP
+// =========================================================
+
+async function help(message) {
+
+    const config =
+        utilityConfig.commands?.help;
+
+
+    if (
+        !config ||
+        !config.enabled
+    ) {
+
+        return;
+    }
+
+
+    const commands = [];
+
+
+    // =====================================================
+    // 🐾 INTERACCIONES
+    // =====================================================
+
+    for (
+        const [name, command]
+        of Object.entries(
+            interactionsConfig.commands || {}
+        )
+    ) {
+
+        if (!command.enabled) continue;
+
+
+        commands.push(
+            `${command.emoji || "🐾"} \`m;${name}\``
+        );
+    }
+
+
+    // =====================================================
+    // 📋 LISTA DE COMANDOS
+    // =====================================================
+
+    const embed =
+        new EmbedBuilder()
+
+            .setTitle(
+                config.title ||
+                "📖 Mitty • Centro de Ayuda"
+            )
+
+            .setDescription(
+                `${config.description || ""}\n\n` +
+                commands.join("\n")
+            );
+
+
+    const sent =
+        await message.reply({
+            embeds: [embed]
+        });
+
+
+    const deleteTime =
+        config.deleteAfter ??
+        utilityConfig.settings?.deleteAfter ??
+        300000;
+
+
+    deleteAfter(
+        sent,
+        deleteTime
+    );
+
+
+    deleteAfter(
+        message,
+        deleteTime
+    );
+}
+
+
+// =========================================================
+// 📊 COMANDO INTERACTIONS
+// =========================================================
+
+async function interactions(
+    message,
+    target
+) {
+
+    const config =
+        utilityConfig.commands?.interactions;
+
+
+    if (
+        !config ||
+        !config.enabled
+    ) {
+
+        return;
+    }
+
+
+    const user =
+        target ||
+        message.author;
+
+
+    const profileData =
+        ensureProfile(
+            user.id
+        );
+
+
+    const given =
+        profileData
+            .interactions
+            .given || {};
+
+
+    const received =
+        profileData
+            .interactions
+            .received || {};
+
+
+    // =====================================================
+    // 📤 INTERACCIONES DADAS
+    // =====================================================
+
+    const givenLines =
+        Object.entries(given)
+
+            .filter(
+                ([, count]) =>
+                    Number(count) > 0
+            )
+
+            .map(
+                ([name, count]) =>
+                    `🐾 **${count}** de **${name}**`
+            );
+
+
+    // =====================================================
+    // 📥 INTERACCIONES RECIBIDAS
+    // =====================================================
+
+    const receivedLines =
+        Object.entries(received)
+
+            .filter(
+                ([, count]) =>
+                    Number(count) > 0
+            )
+
+            .map(
+                ([name, count]) =>
+                    `🐾 **${count}** de **${name}**`
+            );
+
+
+    const givenText =
+        givenLines.length
+            ? givenLines.join("\n")
+            : "Ninguna todavía.";
+
+
+    const receivedText =
+        receivedLines.length
+            ? receivedLines.join("\n")
+            : "Ninguna todavía.";
+
+
+    // =====================================================
+    // 📊 EMBED
+    // =====================================================
+
+    const embed =
+        new EmbedBuilder()
+
+            .setTitle(
+                `${config.title || "📊 Estadísticas de Interacciones"} • ${user.username}`
+            )
+
+            .setThumbnail(
+                user.displayAvatarURL({
+                    size: 256
+                })
+            )
+
+            .addFields(
+
+                {
+                    name: "📤 Ha dado",
+
+                    value:
+                        givenText,
+
+                    inline: true
+                },
+
+                {
+                    name: "📥 Ha recibido",
+
+                    value:
+                        receivedText,
+
+                    inline: true
+                },
+
+                {
+                    name: "📤 Total dadas",
+
+                    value:
+                        `${getInteractionTotal(given)}`,
+
+                    inline: true
+                },
+
+                {
+                    name: "📥 Total recibidas",
+
+                    value:
+                        `${getInteractionTotal(received)}`,
+
+                    inline: true
+                }
+            );
+
+
+    const sent =
+        await message.reply({
+            embeds: [embed]
+        });
+
+
+    const deleteTime =
+        config.deleteAfter ??
+        utilityConfig.settings?.deleteAfter ??
+        300000;
+
+
+    deleteAfter(
+        sent,
+        deleteTime
+    );
+
+
+    deleteAfter(
+        message,
+        deleteTime
+    );
+}
+
+
+// =========================================================
+// 👤 COMANDO PROFILE
+// =========================================================
+
+async function profile(
+    message,
+    target
+) {
+
+    const user =
+        target ||
+        message.author;
+
+
+    const data =
+        ensureProfile(
+            user.id
+        );
+
+
+    const givenTotal =
+        getInteractionTotal(
+            data.interactions.given
+        );
+
+
+    const receivedTotal =
+        getInteractionTotal(
+            data.interactions.received
+        );
+
+
+    // =====================================================
+    // 🪪 PERFIL
+    // =====================================================
+
+    const embed =
+        new EmbedBuilder()
+
+            .setTitle(
+                `🐾 Perfil de ${user.username}`
+            )
+
+            .setThumbnail(
+                user.displayAvatarURL({
+                    size: 512
+                })
+            )
+
+            .addFields(
+
+                {
+                    name: "⭐ Stars",
+
+                    value:
+                        `${data.stars}`,
+
+                    inline: true
+                },
+
+                {
+                    name: "💭 Estado",
+
+                    value:
+                        data.social.status,
+
+                    inline: true
+                },
+
+                {
+                    name: "📤 Interacciones dadas",
+
+                    value:
+                        `${givenTotal}`,
+
+                    inline: true
+                },
+
+                {
+                    name: "📥 Interacciones recibidas",
+
+                    value:
+                        `${receivedTotal}`,
+
+                    inline: true
+                },
+
+                {
+                    name: "🎞️ GIF enviados",
+
+                    value:
+                        `${data.gifs.sent}`,
+
+                    inline: true
+                },
+
+                {
+                    name: "🎞️ GIF recibidos",
+
+                    value:
+                        `${data.gifs.received}`,
+
+                    inline: true
+                },
+
+                {
+                    name: "💬 Mensajes",
+
+                    value:
+                        `${data.stats.messages}`,
+
+                    inline: true
+                },
+
+                {
+                    name: "⚙️ Comandos",
+
+                    value:
+                        `${data.stats.commands}`,
+
+                    inline: true
+                },
+
+                {
+                    name: "📝 Resúmenes",
+
+                    value:
+                        `${data.stats.summaries}`,
+
+                    inline: true
+                }
+            );
+
+
+    const sent =
+        await message.reply({
+            embeds: [embed]
+        });
+
+
+    deleteAfter(
+        sent,
+        300000
+    );
+
+
+    deleteAfter(
+        message,
+        300000
+    );
+}
+
+// =========================================================
+// 🐾 MITTY • MOTOR UNIVERSAL
+// PARTE 3/3
+// =========================================================
+
+
+// =========================================================
+// 🐾 EJECUTAR INTERACCIÓN
 // =========================================================
 
 async function executeInteraction(
     message,
     interactionName,
     config,
-    settings
+    target
 ) {
 
-    if (config.enabled === false) {
-        return true;
+    const settings =
+        interactionsConfig.settings || {};
+
+
+    if (!config.enabled) {
+        return;
     }
 
-    let target = null;
+
+    // =====================================================
+    // 🎯 COMPROBAR REPLY
+    // =====================================================
 
     if (
-        settings.requireReply !== false
+        settings.requireReply !== false &&
+        !target
     ) {
 
-        target =
-            await getTargetFromReply(
-                message
-            );
-
-        if (!target) {
-
+        const reply =
             await message.reply(
-                "🐾 Debes responder al mensaje de alguien para usar esta interacción."
+                "🐾 Debes responder a un mensaje para usar esta interacción."
             );
 
-            return true;
-        }
+
+        deleteAfter(
+            reply,
+            300000
+        );
+
+        return;
     }
 
+
+    if (!target) {
+        return;
+    }
+
+
+    // =====================================================
+    // 🚫 EVITAR SELF
+    // =====================================================
+
     if (
-        target &&
         settings.allowSelf === false &&
         target.id === message.author.id
     ) {
 
-        await message.reply(
-            "🐾 No puedes usar esta interacción contigo mismo."
-        );
-
-        return true;
-    }
-
-    let gif =
-        await getGIF(
-            config.gif?.search ||
-            interactionName
-        );
-
-    if (
-        !gif &&
-        config.gif?.fallback
-    ) {
-
-        gif =
-            await getGIF(
-                config.gif.fallback
+        const reply =
+            await message.reply(
+                "🐾 No puedes usar esta interacción contigo mismo."
             );
-    }
 
-    if (target) {
 
-        registerInteraction(
-            message.author.id,
-            target.id,
-            interactionName
+        deleteAfter(
+            reply,
+            300000
         );
+
+        return;
     }
 
-    const createdAt =
-        Date.now();
 
-    const buttonId = [
-        "mitty",
-        "interaction",
-        interactionName.toLowerCase(),
+    // =====================================================
+    // 🎞️ GIF
+    // =====================================================
+
+    const gif =
+        await getGif(
+            config.gif?.search ||
+            `anime ${interactionName}`
+        );
+
+
+    if (!gif) {
+
+        const reply =
+            await message.reply(
+                "🐾 No encontré un GIF para esta interacción."
+            );
+
+
+        deleteAfter(
+            reply,
+            300000
+        );
+
+        return;
+    }
+
+
+    // =====================================================
+    // 📊 REGISTRAR ESTADÍSTICAS
+    // =====================================================
+
+    registerInteraction(
         message.author.id,
-        target?.id || "none",
-        createdAt
-    ].join("_");
+        interactionName,
+        target.id
+    );
+
+
+    // =====================================================
+    // 📝 TEXTO
+    // =====================================================
+
+    const actionText =
+        config.texts?.action ||
+        "interactuó con";
+
+
+    const buttonText =
+        config.texts?.button ||
+        "🔄 Devolver";
+
+
+    // =====================================================
+    // 🖼️ EMBED
+    // =====================================================
+
+    const embed =
+        new EmbedBuilder()
+
+            .setDescription(
+                `${config.emoji || "🐾"} **${message.author.username}** ${actionText} **${target.username}**`
+            )
+
+            .setImage(gif);
+
+
+    // =====================================================
+    // 🔘 BOTÓN DE RESPUESTA
+    // =====================================================
 
     const button =
         new ButtonBuilder()
-            .setCustomId(buttonId)
-            .setLabel(
-                config.texts?.button ||
-                "🔄 Devolver"
+
+            .setCustomId(
+                [
+                    "mitty",
+                    "interaction",
+                    interactionName,
+                    message.author.id,
+                    target.id,
+                    Date.now()
+                ].join("_")
             )
+
+            .setLabel(
+                buttonText
+            )
+
             .setStyle(
                 ButtonStyle.Secondary
             );
+
 
     const row =
         new ActionRowBuilder()
             .addComponents(button);
 
-    const embed =
-        new EmbedBuilder()
-            .setColor(0xff9fcf)
-            .setDescription(
-                `${config.emoji || "🐾"} **${message.author}** ` +
-                `${config.texts?.action || "interactuó con"} ` +
-                `**${target || "alguien"}**`
-            )
-            .setFooter({
-                text:
-                    "🐾 Mitty • Interacciones"
-            });
 
-    if (gif) {
-        embed.setImage(gif);
+    // =====================================================
+    // 📤 ENVIAR
+    // =====================================================
+
+    const sent =
+        await message.channel.send({
+
+            embeds: [
+                embed
+            ],
+
+            components: [
+                row
+            ]
+        });
+
+
+    // =====================================================
+    // 🧹 BORRAR EN 5 MINUTOS
+    // =====================================================
+
+    deleteAfter(
+        sent,
+        300000
+    );
+
+
+    deleteAfter(
+        message,
+        300000
+    );
+}
+
+
+// =========================================================
+// ⚙️ EJECUTAR COMANDO
+// =========================================================
+
+export async function handleCommand(
+    message,
+    commandName,
+    args = []
+) {
+
+    const normalized =
+        commandName.toLowerCase();
+
+
+    // =====================================================
+    // 📊 CONTAR COMANDO
+    // =====================================================
+
+    const authorProfile =
+        ensureProfile(
+            message.author.id
+        );
+
+
+    authorProfile.stats.commands++;
+
+
+    saveProfiles();
+
+
+    // =====================================================
+    // 📖 HELP
+    // =====================================================
+
+    if (
+        normalized === "help" ||
+        normalized === "ayuda"
+    ) {
+
+        await help(message);
+
+        return;
     }
 
-    await message.reply({
-        embeds: [embed],
-        components: [row]
-    });
 
-    return true;
+    // =====================================================
+    // 👤 PROFILE
+    // =====================================================
+
+    if (
+        normalized === "profile" ||
+        normalized === "perfil"
+    ) {
+
+        await profile(
+            message,
+            message.mentions.users.first() || null
+        );
+
+        return;
+    }
+
+
+    // =====================================================
+    // 📊 INTERACTIONS
+    // =====================================================
+
+    if (
+        normalized === "interactions" ||
+        normalized === "stats" ||
+        normalized === "estadisticas" ||
+        normalized === "estadísticas"
+    ) {
+
+        await interactions(
+            message,
+            message.mentions.users.first() || null
+        );
+
+        return;
+    }
+
+
+    // =====================================================
+    // 🐾 BUSCAR INTERACCIÓN
+    // =====================================================
+
+    const interaction =
+        findInteraction(
+            normalized
+        );
+
+
+    if (!interaction) {
+        return;
+    }
+
+
+    // =====================================================
+    // 🎯 OBTENER OBJETIVO
+    // =====================================================
+
+    const target =
+        await getTargetFromReply(
+            message
+        );
+
+
+    // =====================================================
+    // 🐾 EJECUTAR
+    // =====================================================
+
+    await executeInteraction(
+        message,
+        interaction.name,
+        interaction.config,
+        target
+    );
 }
+
 
 // =========================================================
 // 🔘 MANEJAR BOTONES
 // =========================================================
 
-async function handleButton(interaction) {
-
-    if (!interaction.isButton()) {
-        return false;
-    }
-
-    const id =
-        interaction.customId;
-
-    if (
-        !id.startsWith(
-            "mitty_interaction_"
-        )
-    ) {
-        return false;
-    }
+export async function handleButton(
+    interaction
+) {
 
     const parts =
-        id.split("_");
+        interaction.customId.split("_");
 
-    if (parts.length < 6) {
-        return false;
+
+    // =====================================================
+    // 🔎 COMPROBAR BOTÓN MITTY
+    // =====================================================
+
+    if (
+        parts[0] !== "mitty" ||
+        parts[1] !== "interaction"
+    ) {
+
+        return;
     }
+
 
     const interactionName =
         parts[2];
 
-    const originalAuthorId =
+
+    const authorId =
         parts[3];
 
-    const originalTargetId =
+
+    const targetId =
         parts[4];
 
-    const createdAt =
+
+    const timestamp =
         Number(parts[5]);
 
-    const data =
-        loadInteractions();
+
+    // =====================================================
+    // ⏱️ EXPIRACIÓN
+    // =====================================================
 
     const expiration =
         Number(
-            data.settings?.buttonExpiration
+            interactionsConfig
+                .settings
+                ?.buttonExpiration
         ) || 120000;
 
+
     if (
-        Date.now() - createdAt >
+        Date.now() - timestamp >
         expiration
     ) {
 
@@ -643,166 +1436,217 @@ async function handleButton(interaction) {
             content:
                 "⏱️ Este botón ya expiró.",
 
-            ephemeral:
-                true
+            ephemeral: true
         });
 
-        return true;
+        return;
     }
 
+
+    // =====================================================
+    // 🎯 SOLO EL DESTINATARIO
+    // =====================================================
+
     if (
-        interaction.user.id !==
-        originalTargetId
+        interaction.user.id !== targetId
     ) {
 
         await interaction.reply({
 
             content:
-                "🐾 Este botón está destinado a la persona que recibió la interacción.",
+                "🐾 Este botón no es para ti.",
 
-            ephemeral:
-                true
+            ephemeral: true
         });
 
-        return true;
+        return;
     }
 
-    const result =
-        findInteraction(
-            interactionName
-        );
 
-    if (!result) {
-
-        await interaction.reply({
-
-            content:
-                "❌ Esta interacción ya no existe.",
-
-            ephemeral:
-                true
-        });
-
-        return true;
-    }
+    // =====================================================
+    // ⚙️ CONFIGURACIÓN
+    // =====================================================
 
     const config =
-        result.command;
+        interactionsConfig
+            .commands
+            ?.[interactionName];
 
-    let gif =
-        await getGIF(
-            config.gif?.search ||
-            interactionName
-        );
 
     if (
-        !gif &&
-        config.gif?.fallback
+        !config ||
+        !config.enabled
     ) {
 
-        gif =
-            await getGIF(
-                config.gif.fallback
-            );
+        await interaction.reply({
+
+            content:
+                "❌ Esta interacción ya no está disponible.",
+
+            ephemeral: true
+        });
+
+        return;
     }
+
+
+    // =====================================================
+    // 🎞️ GIF DE RESPUESTA
+    // =====================================================
+
+    const gif =
+        await getGif(
+            config.gif?.search ||
+            `anime ${interactionName}`
+        );
+
+
+    if (!gif) {
+
+        await interaction.reply({
+
+            content:
+                "🐾 No encontré un GIF para responder.",
+
+            ephemeral: true
+        });
+
+        return;
+    }
+
+
+    // =====================================================
+    // 📊 REGISTRAR RESPUESTA
+    // =====================================================
 
     registerInteraction(
         interaction.user.id,
-        originalAuthorId,
-        interactionName
+        interactionName,
+        authorId
     );
+
+
+    // =====================================================
+    // 📝 TEXTO DE RESPUESTA
+    // =====================================================
+
+    const returnText =
+        config.texts?.return ||
+        "respondió a";
+
+
+    // =====================================================
+    // 🖼️ NUEVO EMBED
+    // =====================================================
 
     const embed =
         new EmbedBuilder()
-            .setColor(0xff9fcf)
-            .setDescription(
-                `${config.emoji || "🐾"} ` +
-                `**${interaction.user}** ` +
-                `${config.texts?.return || "devolvió la interacción a"} ` +
-                `**<@${originalAuthorId}>**`
-            )
-            .setFooter({
-                text:
-                    "🐾 Mitty • Interacciones"
-            });
 
-    if (gif) {
-        embed.setImage(gif);
-    }
+            .setDescription(
+                `${config.emoji || "🐾"} **${interaction.user.username}** ${returnText} **<@${authorId}>**`
+            )
+
+            .setImage(gif);
+
+
+    // =====================================================
+    // 🔒 BOTÓN DESACTIVADO
+    // =====================================================
 
     const disabledButton =
         new ButtonBuilder()
-            .setCustomId(id)
+
+            .setCustomId(
+                interaction.customId
+            )
+
             .setLabel(
                 config.texts?.button ||
-                "🔄 Devolver"
+                "🔄 Responder"
             )
+
             .setStyle(
                 ButtonStyle.Secondary
             )
+
             .setDisabled(true);
 
-    const disabledRow =
+
+    const row =
         new ActionRowBuilder()
             .addComponents(
                 disabledButton
             );
 
-    await interaction.update({
 
-        embeds: [embed],
+    // =====================================================
+    // ✏️ ACTUALIZAR MENSAJE
+    // =====================================================
 
-        components: [
-            disabledRow
-        ]
-    });
+    try {
 
-    return true;
-}
+        await interaction.update({
 
+            embeds: [
+                embed
+            ],
 
-// =========================================================
-// 💬 EJECUTAR COMANDO
-// =========================================================
+            components: [
+                row
+            ]
+        });
 
-async function handleCommand(
-    message,
-    commandName,
-    args = []
-) {
+    } catch (error) {
 
-    const result =
-        findInteraction(
-            commandName
+        console.error(
+            "[MITTY] ❌ Error actualizando interacción:",
+            error
         );
-
-    if (!result) {
-        return false;
     }
-
-    return await executeInteraction(
-        message,
-        result.name,
-        result.command,
-        result.settings
-    );
 }
 
 
 // =========================================================
-// 📤 EXPORTAR
+// ☁️ GUARDADO AUTOMÁTICO
+// =========================================================
+
+const saveInterval =
+    Number(
+        process.env.SAVE_INTERVAL
+    ) || 30000;
+
+
+setInterval(
+    async () => {
+
+        try {
+
+            const {
+                flushProfileToGitHub
+            } = await import(
+                "./githubStorage.js"
+            );
+
+
+            await flushProfileToGitHub();
+
+        } catch (error) {
+
+            console.error(
+                "[MITTY] ❌ Error en guardado automático:",
+                error
+            );
+        }
+
+    },
+    saveInterval
+);
+
+
+// =========================================================
+// 📤 EXPORTACIONES
 // =========================================================
 
 export {
-
-    handleCommand,
-
-    handleButton,
-
-    findInteraction,
-
-    loadInteractions,
-
-    registerInteraction
-
+    saveProfiles
 };
