@@ -1,42 +1,15 @@
-
 {
     "system": "interactions",
 
     "settings": {
         "requireReply": true,
         "allowSelf": false,
-
         "gifProvider": "giphy",
         "gifRating": "g",
         "gifLimit": 20,
-
         "preferredOrientation": "horizontal",
         "preferredAspectRatio": "16:9",
-
-        "buttonExpiration": 120000,
-
-        "safeSearch": true,
-
-        "blockedTerms": [
-            "nsfw",
-            "nude",
-            "nudity",
-            "naked",
-            "sex",
-            "sexual",
-            "porn",
-            "xxx",
-            "ecchi",
-            "hentai",
-            "lewd",
-            "explicit",
-            "fetish",
-            "bondage",
-            "slave",
-            "slavery",
-            "adult",
-            "18+"
-        ]
+        "buttonExpiration": 120000
     },
 
     "commands": {
@@ -46,12 +19,9 @@
             "aliases": ["abrazo"],
             "enabled": true,
             "emoji": "🤗",
-
             "gif": {
-                "search": "anime wholesome friendship hug",
-                "fallback": "anime wholesome friends"
+                "search": "anime hug"
             },
-
             "texts": {
                 "action": "le dio un abrazo a",
                 "button": "🤗 Devolver abrazo",
@@ -64,12 +34,9 @@
             "aliases": ["palmaditas"],
             "enabled": true,
             "emoji": "🫳",
-
             "gif": {
-                "search": "anime wholesome headpat",
-                "fallback": "anime cute head pat"
+                "search": "anime pat"
             },
-
             "texts": {
                 "action": "le dio palmaditas a",
                 "button": "🫳 Devolver palmaditas",
@@ -82,12 +49,9 @@
             "aliases": [],
             "enabled": true,
             "emoji": "👉",
-
             "gif": {
-                "search": "anime cute funny boop",
-                "fallback": "anime wholesome boop"
+                "search": "anime boop"
             },
-
             "texts": {
                 "action": "le hizo boop a",
                 "button": "👉 Devolver boop",
@@ -100,12 +64,9 @@
             "aliases": ["acurrucon", "acurrucón"],
             "enabled": true,
             "emoji": "🫂",
-
             "gif": {
-                "search": "anime wholesome friendship cuddle",
-                "fallback": "anime wholesome friends"
+                "search": "anime cuddle"
             },
-
             "texts": {
                 "action": "se acurrucó con",
                 "button": "🫂 Devolver acurrucón",
@@ -118,12 +79,9 @@
             "aliases": [],
             "enabled": true,
             "emoji": "👉",
-
             "gif": {
-                "search": "anime cute funny poke",
-                "fallback": "anime wholesome poke"
+                "search": "anime poke"
             },
-
             "texts": {
                 "action": "le dio un poke a",
                 "button": "👉 Devolver poke",
@@ -136,12 +94,9 @@
             "aliases": ["miau"],
             "enabled": true,
             "emoji": "🐱",
-
             "gif": {
-                "search": "anime cute cat meow",
-                "fallback": "anime cute cat"
+                "search": "anime meow"
             },
-
             "texts": {
                 "action": "le maulló a",
                 "button": "🐱 Devolver miau",
@@ -154,12 +109,9 @@
             "aliases": ["saludar"],
             "enabled": true,
             "emoji": "👋",
-
             "gif": {
-                "search": "anime wholesome character waving",
-                "fallback": "anime cute waving"
+                "search": "anime wave"
             },
-
             "texts": {
                 "action": "saludó a",
                 "button": "👋 Devolver saludo",
@@ -172,12 +124,9 @@
             "aliases": ["high"],
             "enabled": true,
             "emoji": "🙌",
-
             "gif": {
-                "search": "anime wholesome friends high five",
-                "fallback": "anime high five"
+                "search": "anime high five"
             },
-
             "texts": {
                 "action": "chocó los cinco con",
                 "button": "🙌 Chocar los cinco",
@@ -190,12 +139,9 @@
             "aliases": ["bailar"],
             "enabled": true,
             "emoji": "💃",
-
             "gif": {
-                "search": "anime funny dance",
-                "fallback": "anime cute dance"
+                "search": "anime dance"
             },
-
             "texts": {
                 "action": "bailó con",
                 "button": "💃 Bailar también",
@@ -208,12 +154,9 @@
             "aliases": ["feliz"],
             "enabled": true,
             "emoji": "✨",
-
             "gif": {
-                "search": "anime wholesome happy reaction",
-                "fallback": "anime cute happy reaction"
+                "search": "anime happy"
             },
-
             "texts": {
                 "action": "compartió su felicidad con",
                 "button": "✨ Compartir felicidad",
@@ -226,12 +169,9 @@
             "aliases": [],
             "enabled": true,
             "emoji": "🔨",
-
             "gif": {
-                "search": "anime funny cartoon bonk",
-                "fallback": "anime funny reaction bonk"
+                "search": "anime bonk"
             },
-
             "texts": {
                 "action": "le hizo un bonk caricaturesco a",
                 "button": "🔨 Devolver bonk",
@@ -244,12 +184,9 @@
             "aliases": [],
             "enabled": true,
             "emoji": "🐾",
-
             "gif": {
-                "search": "anime wholesome friendship",
-                "fallback": "anime cute friends"
+                "search": "anime snuggle"
             },
-
             "texts": {
                 "action": "se acurrucó junto a",
                 "button": "🐾 Acurrucarse también",
@@ -262,12 +199,9 @@
             "aliases": [],
             "enabled": true,
             "emoji": "😛",
-
             "gif": {
-                "search": "anime funny cute face",
-                "fallback": "anime funny reaction"
+                "search": "anime blep"
             },
-
             "texts": {
                 "action": "le hizo blep a",
                 "button": "😛 Devolver blep",
@@ -280,12 +214,9 @@
             "aliases": ["girar"],
             "enabled": true,
             "emoji": "🌀",
-
             "gif": {
-                "search": "anime funny character spinning",
-                "fallback": "anime cute spinning"
+                "search": "anime spin"
             },
-
             "texts": {
                 "action": "dio unas vueltas junto a",
                 "button": "🌀 Girar también",
@@ -298,12 +229,9 @@
             "aliases": ["dormir"],
             "enabled": true,
             "emoji": "😴",
-
             "gif": {
-                "search": "anime cute character sleeping",
-                "fallback": "anime wholesome sleeping"
+                "search": "anime sleep"
             },
-
             "texts": {
                 "action": "se quedó dormido junto a",
                 "button": "😴 Dormirse también",
@@ -316,12 +244,9 @@
             "aliases": [],
             "enabled": true,
             "emoji": "🍴",
-
             "gif": {
-                "search": "anime funny eating reaction",
-                "fallback": "anime cute eating"
+                "search": "anime nom"
             },
-
             "texts": {
                 "action": "le hizo nom a",
                 "button": "🍴 Devolver nom",
@@ -329,4 +254,4 @@
             }
         }
     }
-        }
+}
