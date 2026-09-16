@@ -1,0 +1,23 @@
+{
+    "system": "utility",
+    "settings": {
+        "deleteAfter": 300000
+    },
+    "commands": {
+        "help": {
+            "type": "utility",
+            "aliases": ["ayuda"],
+            "enabled": true,
+            "title": "📖 Mitty • Centro de Ayuda",
+            "description": "Aquí tienes los comandos disponibles de Mitty.",
+            "deleteAfter": 300000
+        },
+        "interactions": {
+            "type": "utility",
+            "aliases": ["stats", "estadisticas", "estadísticas"],
+            "enabled": true,
+            "title": "📊 Estadísticas de Interacciones",
+            "deleteAfter": 300000
+        }
+    }
+}
