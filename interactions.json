@@ -1,3 +1,4 @@
+
 {
     "system": "interactions",
 
@@ -7,13 +8,35 @@
 
         "gifProvider": "giphy",
         "gifRating": "g",
-
         "gifLimit": 20,
 
         "preferredOrientation": "horizontal",
         "preferredAspectRatio": "16:9",
 
-        "buttonExpiration": 120000
+        "buttonExpiration": 120000,
+
+        "safeSearch": true,
+
+        "blockedTerms": [
+            "nsfw",
+            "nude",
+            "nudity",
+            "naked",
+            "sex",
+            "sexual",
+            "porn",
+            "xxx",
+            "ecchi",
+            "hentai",
+            "lewd",
+            "explicit",
+            "fetish",
+            "bondage",
+            "slave",
+            "slavery",
+            "adult",
+            "18+"
+        ]
     },
 
     "commands": {
@@ -25,8 +48,8 @@
             "emoji": "🤗",
 
             "gif": {
-                "search": "anime hug scene",
-                "fallback": "anime hugging scene"
+                "search": "anime wholesome friendship hug",
+                "fallback": "anime wholesome friends"
             },
 
             "texts": {
@@ -43,8 +66,8 @@
             "emoji": "🫳",
 
             "gif": {
-                "search": "anime headpat scene",
-                "fallback": "anime pat head scene"
+                "search": "anime wholesome headpat",
+                "fallback": "anime cute head pat"
             },
 
             "texts": {
@@ -61,8 +84,8 @@
             "emoji": "👉",
 
             "gif": {
-                "search": "anime boop scene",
-                "fallback": "anime cute boop"
+                "search": "anime cute funny boop",
+                "fallback": "anime wholesome boop"
             },
 
             "texts": {
@@ -79,8 +102,8 @@
             "emoji": "🫂",
 
             "gif": {
-                "search": "anime cuddle scene",
-                "fallback": "anime cozy cuddle"
+                "search": "anime wholesome friendship cuddle",
+                "fallback": "anime wholesome friends"
             },
 
             "texts": {
@@ -97,8 +120,8 @@
             "emoji": "👉",
 
             "gif": {
-                "search": "anime poke scene",
-                "fallback": "anime funny poke"
+                "search": "anime cute funny poke",
+                "fallback": "anime wholesome poke"
             },
 
             "texts": {
@@ -115,8 +138,8 @@
             "emoji": "🐱",
 
             "gif": {
-                "search": "anime cat meow scene",
-                "fallback": "anime cat cute"
+                "search": "anime cute cat meow",
+                "fallback": "anime cute cat"
             },
 
             "texts": {
@@ -133,8 +156,8 @@
             "emoji": "👋",
 
             "gif": {
-                "search": "anime waving scene",
-                "fallback": "anime character waving"
+                "search": "anime wholesome character waving",
+                "fallback": "anime cute waving"
             },
 
             "texts": {
@@ -151,8 +174,8 @@
             "emoji": "🙌",
 
             "gif": {
-                "search": "anime high five scene",
-                "fallback": "anime characters high five"
+                "search": "anime wholesome friends high five",
+                "fallback": "anime high five"
             },
 
             "texts": {
@@ -169,8 +192,8 @@
             "emoji": "💃",
 
             "gif": {
-                "search": "anime dance scene",
-                "fallback": "anime character dancing"
+                "search": "anime funny dance",
+                "fallback": "anime cute dance"
             },
 
             "texts": {
@@ -187,8 +210,8 @@
             "emoji": "✨",
 
             "gif": {
-                "search": "anime happy scene",
-                "fallback": "anime character happy"
+                "search": "anime wholesome happy reaction",
+                "fallback": "anime cute happy reaction"
             },
 
             "texts": {
@@ -205,8 +228,8 @@
             "emoji": "🔨",
 
             "gif": {
-                "search": "anime bonk funny scene",
-                "fallback": "anime funny bonk"
+                "search": "anime funny cartoon bonk",
+                "fallback": "anime funny reaction bonk"
             },
 
             "texts": {
@@ -223,8 +246,8 @@
             "emoji": "🐾",
 
             "gif": {
-                "search": "anime cozy scene",
-                "fallback": "anime wholesome cuddle"
+                "search": "anime wholesome friendship",
+                "fallback": "anime cute friends"
             },
 
             "texts": {
@@ -241,8 +264,8 @@
             "emoji": "😛",
 
             "gif": {
-                "search": "anime funny face scene",
-                "fallback": "anime cute funny expression"
+                "search": "anime funny cute face",
+                "fallback": "anime funny reaction"
             },
 
             "texts": {
@@ -259,8 +282,8 @@
             "emoji": "🌀",
 
             "gif": {
-                "search": "anime spinning scene",
-                "fallback": "anime character spinning"
+                "search": "anime funny character spinning",
+                "fallback": "anime cute spinning"
             },
 
             "texts": {
@@ -277,8 +300,8 @@
             "emoji": "😴",
 
             "gif": {
-                "search": "anime sleeping scene",
-                "fallback": "anime character sleeping"
+                "search": "anime cute character sleeping",
+                "fallback": "anime wholesome sleeping"
             },
 
             "texts": {
@@ -295,7 +318,7 @@
             "emoji": "🍴",
 
             "gif": {
-                "search": "anime funny eating scene",
+                "search": "anime funny eating reaction",
                 "fallback": "anime cute eating"
             },
 
@@ -306,4 +329,4 @@
             }
         }
     }
-}
+        }
